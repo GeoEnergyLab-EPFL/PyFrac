@@ -23,7 +23,16 @@ def get_info(Fr_list_A):  # get L(t) and x_max(t) and p(t)
         y_min_temp = 0.
         y_max_temp = 0.
         for i in range(frac_sol.Ffront.shape[0]):
+            # rotate
             segment = frac_sol.Ffront[i]
+            psi = np.pi / 3.
+            [x, y] = [segment[0], segment[1]]
+            [xa, ya] = np.dot([[np.cos(psi), -np.sin(psi)],
+                               [np.sin(psi), np.cos(psi)]], [x, y])
+            [x, y] = [segment[2], segment[3]]
+            [xb, yb] = np.dot([[np.cos(psi), -np.sin(psi)],
+                               [np.sin(psi), np.cos(psi)]], [x, y])
+            segment = [xa, ya, xb, yb]
             # to find the x_max at this time:
             if segment[0] > x_max_temp:
                 x_max_temp = segment[0]
@@ -305,14 +314,56 @@ to_export = [1,2,3,7,8,9,10]
 simul_list = ["05mtoK", "06mtoK","07mtoK","08mtoK"]
 simul_list = ["09mtoK"]
 simul_list = ["11mtoK"]
+simul_list = ["01_break_at_1p1","01_break_at_1p2","01_break_at_1p3","01_break_at_1p4"]
+simul_list = ["01_break_at_1p1_ref"]
+simul_list = ["02ter"]
+simul_list = ["01_break_at_1p3_ref"]
+simul_list = ["01_break_at_1p1_ref"]
+simul_list = ["01_break_at_1p2_ref"]
+simul_list = ["01_break_at_1p4_ref"]
+simul_list = ["06mtoK_break_kratio_3p5"]
+simul_list = ["07mtoK_break_k2k1_6p5"]
+simul_list = ["06mtoK_break"]
+simul_list = ["bt_ar5_1959"]
+simul_list = ["01_break_at_1p1_ref_incl"]
+simul_list = ["sim_kbar_0p99_kratio_2"]
+simul_list = ["09mtoK_bis"]
+simul_list = ["01_break_at_1p1_ref_inc_60"]
+simul_list = ["01_break_at_1p2_ref_inc_60"]
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/01_break_at_1p"
+common_address = "/home/carlo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/"
 common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
-#common_address = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final/"
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/01_break_at_1p"
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/simID_1959_ar_at_bt_5"
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/01_break_at_1p"
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
+common_address = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/01_break_at_1p"
 folders_list = [ common_address + "05mtoK",
                  common_address + "06mtoK",
                  common_address + "07mtoK",
                  common_address + "08mtoK"]
-folders_list = [ common_address + "11mtoK"]
-destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final"
+folders_list = [ common_address + "1",
+                 common_address + "2",
+                 common_address + "3",
+                 common_address + "4"]
+folders_list = [ common_address + "1_ref"]
+folders_list = [ common_address + "02ter"]
+folders_list = [ common_address + "3_ref"]
+folders_list = [ common_address + "1_ref"]
+folders_list = [ common_address + "2_ref"]
+folders_list = [ common_address + "4_ref"]
+folders_list = [ common_address + "6mtoK_break_kratio_3p5"]
+folders_list = [ common_address + "07mtoK_break_k2k1_6p5"]
+folders_list = [ common_address + "6mtoK_break"]
+folders_list = [ common_address]
+folders_list = [ common_address + "1_ref_inc/Data/01_break_at_1p1_ref_inc"]
+folders_list = [ "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/sim_kbar_0p99_kratio_2"]
+destination = "/home/carlo/Desktop/PyFrac/03_Three_toughness_layers/Data_final/"
+folders_list = [ common_address + "09mtoK"]
+folders_list = [ common_address + "1_ref_inc_60/Data/01_break_at_1p1_ref_inc"]
+folders_list = [ common_address + "2_ref_inc_60/Data/01_break_at_1p2_ref_inc_60"]
 #destination = "/home/peruzzo/PycharmProjects/PyFrac/03_Three_toughness_layers/Data_final"
 # ---GO ---:
+#K_Ic = 0.4e6
 check_exe(folders_list, simul_list, to_export, destination)
+####### remember rotation coords above

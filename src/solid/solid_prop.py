@@ -74,9 +74,9 @@ class MaterialProperties:
 
     """
 
-    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0= None, confining_stress=0.,
+    def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0=None, confining_stress=0.,
                  grain_size=0., K1c_func=None, anisotropic_K1c=False, confining_stress_func=None,
-                 Carters_coef_func=None, TI_elasticity=False, Cij = None, free_surf=False, free_surf_depth=1.e300,
+                 Carters_coef_func=None, TI_elasticity=False, Cij=None, free_surf=False, free_surf_depth=1.e300,
                  TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700, density_func=None):
         """
         The constructor function
@@ -171,7 +171,6 @@ class MaterialProperties:
                 raise ValueError('Error in the size of toughness input!')
         else:
             self.density = density * np.ones((Mesh.NumberOfElts,), float)
-
 
         self.K1cFunc = K1c_func
         self.SigmaOFunc = confining_stress_func
