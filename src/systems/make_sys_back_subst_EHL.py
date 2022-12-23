@@ -456,6 +456,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
                                  InCrack,   C,  interItr,   to_solve,
                                  to_impose, active, interItr_kp1,
                                  lst_edgeInCrk)
+
     #a = a + time.time()
     #print(f'1 {a}')
 
