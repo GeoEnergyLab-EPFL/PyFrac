@@ -190,6 +190,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                         fr.mesh["nx"] == intDict["nx"] and fr.mesh["ny"] == intDict["ny"]) or intDict == []:
                     intDict = copy.deepcopy(fr.mesh)
                     convert_meshDict_to_mesh(fr)
+                    distinct_mesh = fr.mesh
                     mesh_ind = num
                 else:
                     fr.mesh = mesh_ind
@@ -199,6 +200,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                     intDict = {'domain Limits' : fr.mesh.domainLimits,
                                'nx': fr.mesh.nx,
                                'ny': fr.mesh.ny}
+                    distinct_mesh = fr.mesh
                     mesh_ind = num
                 else:
                     fr.mesh = mesh_ind
@@ -1399,7 +1401,7 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
     iter = 0
 
     for jk in fr_list:
-        # we need to decide on the mesh (reference or directly there)
+        # get the mesh (either stored there or retrieve from location)
         if isinstance(jk.mesh, int):
             fr_mesh = fr_list[jk.mesh].mesh
         else:
@@ -1609,12 +1611,17 @@ def get_fracture_head_volume(fr_list, geometric_data=None):
     #loop over time steps to get the volume
     iter = 0
     for jk in fr_list:
+        # get the mesh (either stored there or retrieve from location)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
         z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
-        el_head_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
-        el_head_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
+        el_head_tip = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
+        el_head_channel = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
         v_head[iter] = (np.sum(jk.w[jk.EltChannel[el_head_channel]]) + np.sum(jk.w[jk.EltTip[el_head_tip]] *
-                                                                              jk.FillF[el_head_tip])) * jk.mesh.EltArea
-        v_tot[iter] = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+                                                                              jk.FillF[el_head_tip])) * fr_mesh.EltArea
+        v_tot[iter] = fr_mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
         iter += 1
     return v_tot.flatten(), v_head.flatten()
 
