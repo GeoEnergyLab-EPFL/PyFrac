@@ -83,7 +83,14 @@ class InjectionProperties:
                  delayed_second_injpoint_loc=None,
                  initial_rate_delayed_second_injpoint=None,
                  rate_delayed_inj_pt_func=None,
-                 delayed_second_injpoint_loc_func=None):
+                 delayed_second_injpoint_loc_func=None,
+                 #compr injection line:
+                 model_inj_line=False,
+                 il_compressibility=None,
+                 il_volume=None,
+                 perforation_friction=None,
+                 initial_pressure=None
+                 ):
         """
         The constructor of the InjectionProperties class.
         """
@@ -186,6 +193,8 @@ class InjectionProperties:
         
         self.sinkLocFunc = sink_loc_func
         self.sinkVelFunc = sink_vel_func
+        self.sinkElem = []
+        self.sinkVel = []
         if sink_loc_func is not None:
             if sink_vel_func is None:
                 raise ValueError("Sink velocity function is required for sink elements!")
@@ -200,6 +209,25 @@ class InjectionProperties:
                 self.sinkVel[i] = sink_vel_func(mesh.CenterCoor[self.sinkElem[i], 0],
                                                 mesh.CenterCoor[self.sinkElem[i], 1])
                 
+        self.modelInjLine = model_inj_line
+        if model_inj_line:
+            if il_compressibility is not None:
+                self.ILCompressibility = il_compressibility
+            else:
+                raise ValueError("Injection line compressibility is required!")
+            if il_volume is not None:
+                self.ILVolume = il_volume
+            else:
+                raise ValueError("Injection line volume is required!")
+            if perforation_friction is not None:
+                self.perforationFriction = perforation_friction
+            else:
+                raise ValueError("Perforation friction is required!")
+            if initial_pressure is not None:
+                self.initPressure = initial_pressure
+            else:
+                raise ValueError("initial pressure of the injection line is required!")
+
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -218,7 +246,7 @@ class InjectionProperties:
         Qin = np.zeros(frac.mesh.NumberOfElts, float)
         indxCurTime = max(np.where(tm >= self.injectionRate[0, :])[0])
         currentRate = self.injectionRate[1, indxCurTime]  # current injection rate
-        currentSource = np.intersect1d(self.sourceElem, frac.EltCrack)
+        currentSource = np.intersect1d(self.sourceElem, frac.EltChannel)
         Qin[currentSource] = currentRate / len(currentSource)
 
         return Qin

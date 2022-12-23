@@ -30,7 +30,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'omp' #'tbb'   'workqueue', 'threadsafe' ,'tbb'
+config.THREADING_LAYER = 'workqueue' #'tbb'   'workqueue', 'threadsafe' ,'tbb'
 
 
 @njit(parallel=True, cache = True, nogil=True, fastmath=True)  # <------parallel compilation

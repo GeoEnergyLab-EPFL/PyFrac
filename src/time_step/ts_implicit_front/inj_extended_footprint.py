@@ -28,7 +28,7 @@ from tip.volume_integral import Integral_over_cell, find_corresponding_ribbon_ce
 from utilities.postprocess_fracture import append_to_json_file
 
 
-def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties,
+def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties,
                                  sim_properties, perfNode=None, front_previous_iter = None):
     """
     This function takes the fracture width from the last iteration of the fracture front loop, calculates the level set
@@ -498,6 +498,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                        sim_properties,
                                                        fluid_properties,
                                                        mat_properties,
+                                                       inj_properties,
                                                        EltsTipNew,
                                                        partlyFilledTip,
                                                        C,
@@ -616,6 +617,21 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
         # Fr_kplus1.regime =regime
 
     Fr_kplus1.source = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] != 0)[0]]
+    Fr_kplus1.sink = Fr_lstTmStp.EltCrack[np.where(Qin[Fr_lstTmStp.EltCrack] < 0)[0]]
+
+    if len(data) > 3:
+        Fr_kplus1.injectionRate = np.zeros(Fr_kplus1.mesh.NumberOfElts, dtype=np.float64)
+        Fr_kplus1.pInjLine = Fr_lstTmStp.pInjLine + data[3]
+        Fr_kplus1.injectionRate[data[4][1]] = data[4][0]
+        Fr_kplus1.injectionRate[data[5][1]] = data[5][0]
+        Q_indx = np.where(abs(Qin)>0)[0]
+        print('dPIL ' + repr(data[3]))
+        print('PIL ' + repr(Fr_kplus1.pInjLine))
+        print("Qil " + repr(sum(Fr_kplus1.injectionRate[Q_indx])))
+        # print("pressure drop " + repr(
+        #     inj_properties.perforationFriction * Fr_kplus1.injectionRate[Q_indx] ** 2))
+        # print("pressure at injection " + repr(Fr_kplus1.pFluid[Q_indx]))
+
     if data[0] != None:
         Fr_kplus1.effVisc = data[0][1]
         Fr_kplus1.yieldRatio = data[0][2]

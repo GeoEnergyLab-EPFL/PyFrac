@@ -17,7 +17,8 @@ from scipy.sparse.linalg import gmres
 
 from systems.make_sys_back_subst_EHL import MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse, \
     MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP, EHL_sys_obj, \
-    MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted
+    MakeEquationSystem_ViscousFluid_pressure_substituted_sparse, MakeEquationSystem_ViscousFluid_pressure_substituted, \
+    MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection_line
 from systems.explicit_RKL import solve_width_pressure_RKL2
 from systems.make_sys_common_fun import velocity
 from systems.make_sys_monolithic_EHL import Monolithic_EHL_sys_obj, MakeEquationSystem_Monolithic_precond
@@ -29,7 +30,7 @@ from linear_solvers.linear_iterative_solver import Iterative_linear_solver
 from linear_solvers.preconditioners.prec_back_subst_EHL import EHL_iLU_Prec
 
 
-def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C, Boundary,
+def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, inj_properties, EltTip, partlyFilledTip, C, Boundary,
                 FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon, stagnant_tip,
                 doublefracturedictionary = None, inj_same_footprint = False):
 
@@ -213,7 +214,13 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
             #     - set the function/class that builds the system of equations to be solve and the rhs
             #     - set the gess value for the solution of the system
             if sim_properties.elastohydrSolver == 'implicit_Picard' or sim_properties.elastohydrSolver == 'implicit_Anderson':
-                if sim_properties.solveDeltaP:
+                if inj_properties.modelInjLine:
+                    sys_fun = MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection_line
+                    guess = np.concatenate((np.full(len(to_solve_k), avg_dw, dtype=np.float64),
+                                            pf_guess_neg - Fr_lstTmStp.pFluid[neg],
+                                            pf_guess_tip - Fr_lstTmStp.pFluid[to_impose_k]))
+
+                elif sim_properties.solveDeltaP:
                     if sim_properties.solveSparse:
                         if sim_properties.EHL_iter_lin_solve:
                             if not sim_properties.solve_monolithic:
@@ -253,6 +260,33 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
 
                 inter_itr_init = [vk, np.array([], dtype=int), None]
 
+                if inj_properties.modelInjLine:
+                    #inj_cells = np.where(abs(Qin) > 0)[0]
+                    inj_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltChannel)
+                    sink_cells = np.intersect1d(inj_properties.sourceElem, Fr_lstTmStp.EltCrack)
+
+                    sink = np.zeros(Fr_lstTmStp.mesh.NumberOfElts)
+                    if inj_properties.sinkElem:
+                        sink[inj_properties.sinkElem] = inj_properties.sinkVel * Fr_lstTmStp.mesh.EltArea
+
+                    indxCurTime = max(np.where(Fr_lstTmStp.time + timeStep >= inj_properties.injectionRate[0, :])[0])
+                    currentRate = inj_properties.injectionRate[1, indxCurTime]  # current injection rate
+
+                    inj_ch = np.intersect1d(inj_cells, to_solve_k)
+                    inj_act = np.intersect1d(inj_cells, neg)
+                    inj_in_ch = []
+                    inj_in_act = []
+                    for m in inj_ch:
+                        inj_in_ch.append(np.where(to_solve_k == m)[0][0])
+                    for m in inj_act:
+                        inj_in_act.append(np.where(neg == m)[0][0])
+
+                    arg = (arg, inj_properties, inj_ch, inj_act, sink_cells, Fr_lstTmStp.pInjLine,
+                           np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int), currentRate, sink)
+
+                    guess_il = np.zeros(len(inj_cells) + 1)
+                    guess_il[1:] = Qin[inj_cells]
+                    guess = np.concatenate((guess, guess_il))
 
                 # -Instantiate a direct or iterative linear solver object
                 if sim_properties.EHL_iter_lin_solve:
@@ -449,10 +483,16 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
 
             if sim_properties.solveDeltaP:
                 pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+                #pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+                # modified for injection line
+                pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):
+                                                                    len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
             else:
                 pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+                #pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+                # modified for injection line
+                pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):
+                                        len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
 
 
         if perfNode_nonLinSys is not None:
@@ -463,6 +503,19 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
         if len(neg) == len(to_solve):
             fully_closed = True
 
+        if inj_properties.modelInjLine:
+            pil_indx = len(to_solve_k) + len(neg_km1) + len(to_impose_k)
+            dp_il = sol[pil_indx]
+            Q_ch = sol[pil_indx + 1: pil_indx + 1 + len(inj_ch)]
+            Q_act = sol[pil_indx + 1 + len(inj_ch): pil_indx + 1 + len(inj_ch) + len(inj_act)]
+        else:
+            dp_il = None
+            Q_ch = None
+            Q_act = None
 
-        return_data = [data_nonLinSolve, neg_km1, fully_closed]
+        if inj_properties.modelInjLine:
+            return_data = [data_nonLinSolve, neg_km1, fully_closed, dp_il, (Q_ch, inj_ch), (Q_act, inj_act)]
+        else:
+            return_data = [data_nonLinSolve, neg_km1, fully_closed]
+
         return w, pf, return_data

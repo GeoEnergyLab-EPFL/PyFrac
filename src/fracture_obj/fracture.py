@@ -103,7 +103,8 @@ class Fracture:
 
     """
 
-    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None, boundaryEffect = None, footprint_info=None):
+    def __init__(self, mesh, init_param, solid=None, fluid=None, injection=None, simulProp=None, boundaryEffect=None,
+                 footprint_info=None):
         """
         Initialize the fracture according to the given initialization parameters.
 
@@ -292,6 +293,10 @@ class Fracture:
         self.TarrvlZrVrtx[self.EltCrack] = self.time #trigger time is now when the simulation is started
         if self.v is not None and not np.isnan(self.v).any():
             self.TarrvlZrVrtx[self.EltTip] = self.time - self.l / self.v
+
+        if injection.modelInjLine:
+            self.pInjLine = np.float64(injection.initPressure)
+            self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -533,7 +538,7 @@ class Fracture:
         domainLimits = copy.deepcopy(self.mesh.domainLimits)
         nx = copy.deepcopy(self.mesh.nx)
         ny = copy.deepcopy(self.mesh.ny)
-        mesh_dict = {'domain Limits' : domainLimits,
+        mesh_dict = {'domain Limits': domainLimits,
                      'nx': nx,
                      'ny': ny}
         self.mesh = mesh_dict
@@ -685,9 +690,9 @@ class Fracture:
 
     def update_regime_color(self, old, ind_new_elts, ind_old_elts, new_size):
         value_new_elem = np.asarray([1., 1., 1.])
-        new = np.ndarray((new_size,3),dtype=np.float32)
-        new[ind_old_elts,:] = old[:,:]
-        new[ind_new_elts,:] = value_new_elem[:]
+        new = np.ndarray((new_size,3), dtype=np.float32)
+        new[ind_old_elts, :] = old[:, :]
+        new[ind_new_elts, :] = value_new_elem[:]
         return new
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -943,6 +948,11 @@ class Fracture:
                                                                                    Fr_coarse.mesh.NeiElements[
                                                                                        Fr_coarse.EltTip[elt]]])
 
+            coarse_closed = []
+            for e in self.closed:
+                coarse_closed.append(self.mesh.locate_element(self.mesh.CenterCoor[e, 0], self.mesh.CenterCoor[e, 1]))
+            Fr_coarse.closed = np.unique(np.asarray(coarse_closed, dtype=int))
+
             Fr_coarse.LkOff = LkOff
             Fr_coarse.LkOffTotal = self.LkOffTotal
             Fr_coarse.injectedVol = self.injectedVol
@@ -962,6 +972,9 @@ class Fracture:
                 log.critical('The error on the volume is bigger than 1% it is Ev = ' +
                              str(abs(old_volume - new_volume)/old_volume))
 
+            if inj_prop.modelInjLine:
+                Fr_coarse.pInjLine = self.pInjLine
+                # self.injectionRate = np.full(mesh.NumberOfElts, np.nan, dtype=np.float32)
             return Fr_coarse
             # The hidden part is the new way of the evaluation.
 
