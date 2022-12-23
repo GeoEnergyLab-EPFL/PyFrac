@@ -39,8 +39,8 @@ from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, sim_properties, inj_properties,
-                             perfNode=None):
+def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties,
+                             sim_properties, perfNode=None):
     """
     This function advances the fracture front in an explicit manner by propagating it with the velocity from the last
     time step (see Zia and Lecampion 2019 for details).
