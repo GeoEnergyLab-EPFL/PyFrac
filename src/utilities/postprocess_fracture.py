@@ -1399,8 +1399,14 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
     iter = 0
 
     for jk in fr_list:
+        # we need to decide on the mesh (reference or directly there)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
+
         if len(jk.source) != 0:
-            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+            left, right = get_Ffront_as_vector(jk, fr_mesh.CenterCoor[jk.source[0], ::])[1:]
         else:
             left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
 
