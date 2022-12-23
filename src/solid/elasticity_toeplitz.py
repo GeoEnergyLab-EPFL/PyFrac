@@ -30,7 +30,7 @@ from utilities.utility import append_new_line
 # set the threading layer before any parallel target compilation
 # 'workqueue' is builtin
 # config.THREADING_LAYER = 'workqueue' #'workqueue' , 'threadsafe' ,'tbb', 'omp'
-config.THREADING_LAYER = 'omp' #'tbb'   'workqueue', 'threadsafe' ,'tbb'
+config.THREADING_LAYER = 'workqueue' #'tbb'   'workqueue', 'threadsafe' ,'tbb'
 
 
 @njit(parallel=True, cache = True, nogil=True, fastmath=True)  # <------parallel compilation
@@ -537,14 +537,14 @@ class elasticity_matrix_toepliz(LinearOperator):
             else:
                 # todo: In the case of using HMat and activating a width constraint in a number of cells below the
                 #  threshold, the code can break due to multiple definitions of the function f_matvec_fast.
-                # res = self.HMAT._matvec(uk)
-                res = self.f_matvec_fast(np.float64(uk),
-                                          self.domain_INDX,
-                                          self.codomain_INDX,
-                                          self.codomain_INDX.size,
-                                          self.nx,
-                                          self.C_toeplitz_coe,
-                                          self.C_precision)
+                res = self.HMAT._matvec(uk)
+                # res = self.f_matvec_fast(np.float64(uk),
+                #                           self.domain_INDX,
+                #                           self.codomain_INDX,
+                #                           self.codomain_INDX.size,
+                #                           self.nx,
+                #                           self.C_toeplitz_coe,
+                #                           self.C_precision)
 
             if self.left_precJ:
                 # TIPCORRECTION & LEFT PRECONDITIONER
