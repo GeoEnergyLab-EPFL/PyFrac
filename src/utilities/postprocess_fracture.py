@@ -406,7 +406,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 else:
                     fr_mesh = i.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
-    
+
     elif variable == 'yielded' or variable == 'y':
         if fracture_list[-1].yieldRatio is None:
             raise SystemExit(err_var_not_saved)
@@ -472,7 +472,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
         for i in range(len(fracture_list)):
             variable_list[i] = sum(fracture_list[i].LkOffTotal[fracture_list[i].EltCrack])
             time_srs[i] = fracture_list[i].time
-            
+
     elif variable == 'aspect ratio' or variable == 'ar':
         for i in range(len(fracture_list)):
             x_coords = np.hstack((fracture_list[i].Ffront[:, 0], fracture_list[i].Ffront[:, 2]))
@@ -591,18 +591,23 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                     fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
                     fr_mesh = fracture_list[i].mesh
-                ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
-                xmin = fr_mesh.CenterCoor[ind][0] - 3 * fr_mesh.cellDiag
-                xmax = fr_mesh.CenterCoor[ind][0] + 3 * fr_mesh.cellDiag
-                ymin = fr_mesh.CenterCoor[ind][1] - 3 * fr_mesh.cellDiag
-                ymax = fr_mesh.CenterCoor[ind][1] + 3 * fr_mesh.cellDiag
-                indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
+                try:
+                    fr_mesh.locate_element(point[0][0], point[0][1])[0]
+                except TypeError:
+                    value_point = [np.nan]
+                else:
+                    ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
+                    xmin = fr_mesh.CenterCoor[ind][0] - 3 * fr_mesh.cellDiag
+                    xmax = fr_mesh.CenterCoor[ind][0] + 3 * fr_mesh.cellDiag
+                    ymin = fr_mesh.CenterCoor[ind][1] - 3 * fr_mesh.cellDiag
+                    ymax = fr_mesh.CenterCoor[ind][1] + 3 * fr_mesh.cellDiag
+                    indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
 
-                value_point = griddata(fr_mesh.CenterCoor[indBox],
-                                       var_values[i][indBox],
-                                       point,
-                                       method='linear',
-                                       fill_value=np.nan)
+                    value_point = griddata(fr_mesh.CenterCoor[indBox],
+                                           var_values[i][indBox],
+                                           point,
+                                           method='linear',
+                                           fill_value=np.nan)
                 # interpolate the neighbours of the element only
                 # value_point = griddata(fracture_list[i].mesh.CenterCoor,
                 #                        var_values[i],
@@ -1295,96 +1300,102 @@ def get_front_intercepts(fr_list, point):
         else:
             fr_mesh = fr.mesh
         intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
-        pnt_cell = fr_mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
-        if pnt_cell not in fr.EltChannel:
-            log.warning("Point is not inside fracture!")
+        try:
+            pnt_cell = fr_mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
+        except TypeError:
+            log.warning("Point is not inside Domain!")
+            intercepts.append([0, 0, 0, 0])
         else:
-            pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
-            cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord
-            tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)             # the tip cells with the same y coord
-
-            # the code bellow remove the tip cells which are directly at right and left of the cell containing the point
-            # but have the front line partially passing through them. For them, the horizontal line drawn from the given
-            # point will pass through the cell but not from the front line.
-            if len(tipCells_x_axis) > 2:
-                invalid_cell = np.full(len(tipCells_x_axis), True, dtype=bool)
-                for indx, cell in enumerate(tipCells_x_axis):
-                    in_tip_cells = np.where(fr.EltTip == cell)[0]
-                    if (point[1] > fr.Ffront[in_tip_cells, 1] and point[1] <= fr.Ffront[in_tip_cells, 3]) or (
-                            point[1] < fr.Ffront[in_tip_cells, 1] and point[1] >= fr.Ffront[in_tip_cells, 3]):
-                        invalid_cell[indx] = False
-                tipCells_x_axis = np.delete(tipCells_x_axis, np.where(invalid_cell)[0])
-
-            # find out the left and right cells
-            if len(tipCells_x_axis) == 2:
-                if fr_mesh.CenterCoor[tipCells_x_axis[0], 0] < point[0]:
-                    lft_cell = tipCells_x_axis[0]
-                    rgt_cell = tipCells_x_axis[1]
-                else:
-                    lft_cell = tipCells_x_axis[1]
-                    rgt_cell = tipCells_x_axis[0]
+            if pnt_cell not in fr.EltChannel:
+                log.warning("Point is not inside fracture!")
+                intercepts.append([0, 0, 0, 0])
             else:
-                lft_cell = np.nan
-                rgt_cell = np.nan
+                pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
+                cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)             # the tip cells with the same y coord
 
-            pnt_cell_x = fr_mesh.CenterCoor[pnt_cell, 0]
-            cells_y_axis = np.where(fr_mesh.CenterCoor[:, 0] == pnt_cell_x)[0]
-            tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)
+                # the code bellow remove the tip cells which are directly at right and left of the cell containing the point
+                # but have the front line partially passing through them. For them, the horizontal line drawn from the given
+                # point will pass through the cell but not from the front line.
+                if len(tipCells_x_axis) > 2:
+                    invalid_cell = np.full(len(tipCells_x_axis), True, dtype=bool)
+                    for indx, cell in enumerate(tipCells_x_axis):
+                        in_tip_cells = np.where(fr.EltTip == cell)[0]
+                        if (point[1] > fr.Ffront[in_tip_cells, 1] and point[1] <= fr.Ffront[in_tip_cells, 3]) or (
+                                point[1] < fr.Ffront[in_tip_cells, 1] and point[1] >= fr.Ffront[in_tip_cells, 3]):
+                            invalid_cell[indx] = False
+                    tipCells_x_axis = np.delete(tipCells_x_axis, np.where(invalid_cell)[0])
 
-            # the code bellow remove the tip cells which are directly at top and bottom of the cell containing the point
-            # but have the front line partially passing through them. For them, the vertical line drawn from the given
-            # point will pass through the cell but not from the front line.
-            if len(tipCells_y_axis) > 2:
-                invalid_cell = np.full(len(tipCells_y_axis), True, dtype=bool)
-                for indx, cell in enumerate(tipCells_y_axis):
-                    in_tip_cells = np.where(fr.EltTip == cell)[0]
-                    if (point[0] > fr.Ffront[in_tip_cells, 0] and point[0] <= fr.Ffront[in_tip_cells, 2]) or (
-                            point[0] < fr.Ffront[in_tip_cells, 0] and point[0] >= fr.Ffront[in_tip_cells, 2]):
-                        invalid_cell[indx] = False
-                tipCells_y_axis = np.delete(tipCells_y_axis, np.where(invalid_cell)[0])
-
-            if len(tipCells_y_axis) == 2:
-                if fr_mesh.CenterCoor[tipCells_y_axis[0], 1] < point[1]:
-                    btm_cell = tipCells_y_axis[0]
-                    top_cell = tipCells_y_axis[1]
+                # find out the left and right cells
+                if len(tipCells_x_axis) == 2:
+                    if fr_mesh.CenterCoor[tipCells_x_axis[0], 0] < point[0]:
+                        lft_cell = tipCells_x_axis[0]
+                        rgt_cell = tipCells_x_axis[1]
+                    else:
+                        lft_cell = tipCells_x_axis[1]
+                        rgt_cell = tipCells_x_axis[0]
                 else:
-                    btm_cell = tipCells_y_axis[1]
-                    top_cell = tipCells_y_axis[0]
-            else:
-                btm_cell = np.nan
-                top_cell = np.nan
+                    lft_cell = np.nan
+                    rgt_cell = np.nan
 
-            top_in_tip = np.where(fr.EltTip == top_cell)[0]
-            btm_in_tip = np.where(fr.EltTip == btm_cell)[0]
-            lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
-            rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+                pnt_cell_x = fr_mesh.CenterCoor[pnt_cell, 0]
+                cells_y_axis = np.where(fr_mesh.CenterCoor[:, 0] == pnt_cell_x)[0]
+                tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)
 
-            # find the intersection using the equations of the front lines in the tip cells
-            if top_in_tip.size > 0:
-                intrcp_top = fr.Ffront[top_in_tip, 3] + \
-                         (fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) / (
-                                     fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * \
-                         (point[0] - fr.Ffront[top_in_tip, 2])
+                # the code bellow remove the tip cells which are directly at top and bottom of the cell containing the point
+                # but have the front line partially passing through them. For them, the vertical line drawn from the given
+                # point will pass through the cell but not from the front line.
+                if len(tipCells_y_axis) > 2:
+                    invalid_cell = np.full(len(tipCells_y_axis), True, dtype=bool)
+                    for indx, cell in enumerate(tipCells_y_axis):
+                        in_tip_cells = np.where(fr.EltTip == cell)[0]
+                        if (point[0] > fr.Ffront[in_tip_cells, 0] and point[0] <= fr.Ffront[in_tip_cells, 2]) or (
+                                point[0] < fr.Ffront[in_tip_cells, 0] and point[0] >= fr.Ffront[in_tip_cells, 2]):
+                            invalid_cell[indx] = False
+                    tipCells_y_axis = np.delete(tipCells_y_axis, np.where(invalid_cell)[0])
 
-            if btm_in_tip.size > 0:
-                intrcp_btm = fr.Ffront[btm_in_tip, 3] + \
-                         (fr.Ffront[btm_in_tip, 3] - fr.Ffront[btm_in_tip, 1]) / (
-                                     fr.Ffront[btm_in_tip, 2] - fr.Ffront[btm_in_tip, 0]) * \
-                         (point[0] - fr.Ffront[btm_in_tip, 2])
+                if len(tipCells_y_axis) == 2:
+                    if fr_mesh.CenterCoor[tipCells_y_axis[0], 1] < point[1]:
+                        btm_cell = tipCells_y_axis[0]
+                        top_cell = tipCells_y_axis[1]
+                    else:
+                        btm_cell = tipCells_y_axis[1]
+                        top_cell = tipCells_y_axis[0]
+                else:
+                    btm_cell = np.nan
+                    top_cell = np.nan
 
-            if lft_in_tip.size > 0:
-                intrcp_lft = (point[1] - fr.Ffront[lft_in_tip, 3]) / \
-                         (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
-                                     fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
-                         fr.Ffront[lft_in_tip, 2]
+                top_in_tip = np.where(fr.EltTip == top_cell)[0]
+                btm_in_tip = np.where(fr.EltTip == btm_cell)[0]
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
 
-            if rgt_in_tip.size > 0:
-                intrcp_rgt = (point[1] - fr.Ffront[rgt_in_tip, 3]) / \
-                         (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
-                                     fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
-                         fr.Ffront[rgt_in_tip, 2]
+                # find the intersection using the equations of the front lines in the tip cells
+                if top_in_tip.size > 0:
+                    intrcp_top = fr.Ffront[top_in_tip, 3] + \
+                             (fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) / (
+                                         fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * \
+                             (point[0] - fr.Ffront[top_in_tip, 2])
 
-        intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
+                if btm_in_tip.size > 0:
+                    intrcp_btm = fr.Ffront[btm_in_tip, 3] + \
+                             (fr.Ffront[btm_in_tip, 3] - fr.Ffront[btm_in_tip, 1]) / (
+                                         fr.Ffront[btm_in_tip, 2] - fr.Ffront[btm_in_tip, 0]) * \
+                             (point[0] - fr.Ffront[btm_in_tip, 2])
+
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (point[1] - fr.Ffront[lft_in_tip, 3]) / \
+                             (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                             fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (point[1] - fr.Ffront[rgt_in_tip, 3]) / \
+                             (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                             fr.Ffront[rgt_in_tip, 2]
+
+            intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
 
     return intercepts
 
@@ -1599,6 +1610,7 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
 
         iter = iter + 1
 
+<<<<<<< HEAD
     if head and lateral_diking:
         out_dict = {
           'l': height.flatten().flatten(),
@@ -1653,8 +1665,106 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
           'dle': dist_lower_end.flatten().flatten(),
           'dbmax': dist_max_breadth.flatten().flatten()
         }
+=======
+    out_dict = {
+        'l': height.flatten().flatten(),
+        'bmax': max_breadth.flatten().flatten(),
+        'bavg': avg_breadth.flatten().flatten(),
+        'bvar': var_breadth.flatten(),
+        'bhead': behind_head_breadth.flatten(),
+        'dle': dist_lower_end.flatten().flatten(),
+        'dbmax': dist_max_breadth.flatten().flatten(),
+        'lhead': l_head.flatten().flatten(),
+        'dbdz': dbdz_tail.flatten().flatten(),
+        'whmax': wmaxh.flatten().flatten(),
+        'phmax': pmaxh.flatten().flatten()
+    }
+>>>>>>> 947ad89 (Took out plotting and adapted post processing.)
 
     return out_dict
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+# This is the function to get the breadth
+def get_local_geometry(Fr_list, points):
+
+    breadth = np.empty((len(Fr_list),len(points)))
+    breadth[:] = np.nan
+    height = np.empty((len(Fr_list),len(points)))
+    height[:] = np.nan
+    for p in range(len(points)):
+        for Fr in range(len(Fr_list)):
+            # get the mesh (either stored there or retrieve from location)
+            if isinstance(Fr_list[Fr].mesh, int):
+                fr_mesh = Fr_list[Fr_list[Fr].mesh].mesh
+            else:
+                fr_mesh = Fr_list[Fr].mesh
+            fr = Fr_list[Fr]
+            intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
+            pnt_cell = fr_mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
+            if pnt_cell not in fr.EltChannel:
+                print("Point is not inside fracture!")
+            else:
+                pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
+                cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0]  # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)  # the tip cells with the same y coord
+
+                pnt_cell_x = fr_mesh.CenterCoor[pnt_cell, 0]  # the x coordinate of the cell
+                cells_y_axis = np.where(fr_mesh.CenterCoor[:, 0] == pnt_cell_x)[0]  # all the cells with the same y coord
+                tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)  # the tip cells with the same y coord
+
+                # find out the left and right cells
+                cells_left = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] < fr_mesh.CenterCoor[pnt_cell, 0]]
+                cells_right = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] > fr_mesh.CenterCoor[pnt_cell, 0]]
+                lft_cell = cells_left[abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]))]
+                rgt_cell = cells_right[abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]))]
+
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+
+                # find out the top and bottom cells
+                cells_top = tipCells_y_axis[fr_mesh.CenterCoor[tipCells_y_axis, 1] < fr_mesh.CenterCoor[pnt_cell, 1]]
+                cells_bottom = tipCells_y_axis[fr_mesh.CenterCoor[tipCells_y_axis, 1] > fr_mesh.CenterCoor[pnt_cell, 1]]
+                top_cell = cells_top[abs(fr_mesh.CenterCoor[cells_top, 1] - fr_mesh.CenterCoor[pnt_cell, 1]) ==
+                                      min(abs(fr_mesh.CenterCoor[cells_top, 1] - fr_mesh.CenterCoor[pnt_cell, 1]))]
+                bot_cell = cells_bottom[abs(fr_mesh.CenterCoor[pnt_cell, 1] - fr_mesh.CenterCoor[cells_bottom, 1]) ==
+                                      min(abs(fr_mesh.CenterCoor[pnt_cell, 1] - fr_mesh.CenterCoor[cells_bottom, 1]))]
+
+                top_in_tip = np.where(fr.EltTip == top_cell)[0]
+                bot_in_tip = np.where(fr.EltTip == bot_cell)[0]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (points[p][1] - fr.Ffront[lft_in_tip, 3]) / \
+                                 (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                                 fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (points[p][1] - fr.Ffront[rgt_in_tip, 3]) / \
+                                 (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                                 fr.Ffront[rgt_in_tip, 2]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if top_in_tip.size > 0:
+                    intrcp_top = (points[p][0] - fr.Ffront[top_in_tip, 2]) / \
+                                 (fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * (
+                                         fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) + \
+                                 fr.Ffront[top_in_tip, 3]
+
+                if bot_in_tip.size > 0:
+                    intrcp_bot = (points[p][0] - fr.Ffront[top_in_tip, 2]) / \
+                                 (fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * (
+                                         fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) + \
+                                 fr.Ffront[top_in_tip, 3]
+
+                breadth[Fr, p] = intrcp_rgt[0]-intrcp_lft[0]
+                height[Fr, p] = intrcp_top[0]-intrcp_bot[0]
+
+    return breadth, height
 
 #-----------------------------------------------------------------------------------------------------------------------
 
