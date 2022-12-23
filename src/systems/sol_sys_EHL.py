@@ -258,7 +258,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, E
                 if sim_properties.EHL_iter_lin_solve:
                     if not sim_properties.solve_monolithic:
                         if inj_same_footprint: rcmp_prec_before2ndIter = True
-                        else: rcmp_prec_before2ndIter = False
+                        else: rcmp_prec_before2ndIter = True
 
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart,
