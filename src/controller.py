@@ -321,7 +321,9 @@ class Controller:
 
                 # custom plotting on the fly
                 if self.sim_prop.customPlotsOnTheFly:
-                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, Fr_n_pls1)
+                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, self.solid_prop,
+                                                                          self.fluid_prop, self.injection_prop,
+                                                                          Fr_n_pls1)
 
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
