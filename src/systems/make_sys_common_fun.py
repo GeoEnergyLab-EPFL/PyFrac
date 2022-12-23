@@ -593,10 +593,18 @@ def get_finite_difference_matrix(wNplusOne, sol, frac_n, EltCrack, neiInCrack, f
         pf[to_solve] = np.dot(C[np.ix_(to_solve, EltCrack)], wNplusOne[EltCrack]) + mat_prop.SigmaO[to_solve]
         if sim_prop.solveDeltaP:
             pf[active] = frac_n.pFluid[active] + sol[len(to_solve):len(to_solve) + len(active)]
-            pf[to_impose] = frac_n.pFluid[to_impose] + sol[len(to_solve) + len(active):]
+            #to implement injection line
+            #pf[to_impose] = frac_n.pFluid[to_impose] + sol[len(to_solve) + len(active):]
+            pf[to_impose] = frac_n.pFluid[to_impose] + sol[len(to_solve) + len(active):
+                                                            len(to_solve) + len(active) + len(to_impose)]
+
         else:
             pf[active] = sol[len(to_solve):len(to_solve) + len(active)]
-            pf[to_impose] = sol[len(to_solve) + len(active):]
+            #to implement injection line
+            #pf[to_impose] = sol[len(to_solve) + len(active):]
+            pf[to_impose] = sol[len(to_solve) + len(active):
+                                len(to_solve) + len(active) + len(to_impose)]
+
 
         if fluid_prop.turbulence:
             FinDiffOprtr, interItr_kp1[0] = FiniteDiff_operator_turbulent_implicit(wNplusOne,

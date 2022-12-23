@@ -19,7 +19,7 @@ from mesh_obj.symmetry import get_symetric_elements
 from properties import instrument_start, instrument_close
 from linear_solvers.linear_iterative_solver import iteration_counter
 
-def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, EltTip, partlyFilledTip, C,Boundary,
+def sol_sys_volume_and_load_control(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, inj_properties, EltTip, partlyFilledTip, C,Boundary,
                                      FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon,
                                      doublefracturedictionary = None, inj_same_footprint = False):
     log = logging.getLogger('PyFrac.solve_width_pressure.sol_sys_volume_and_load_control')
