@@ -597,10 +597,11 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                     value_point = [np.nan]
                 else:
                     ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
-                    xmin = fr_mesh.CenterCoor[ind][0] - 3 * fr_mesh.cellDiag
-                    xmax = fr_mesh.CenterCoor[ind][0] + 3 * fr_mesh.cellDiag
-                    ymin = fr_mesh.CenterCoor[ind][1] - 3 * fr_mesh.cellDiag
-                    ymax = fr_mesh.CenterCoor[ind][1] + 3 * fr_mesh.cellDiag
+                    cellDiag = np.sqrt(fr_mesh.hx ** 2 + fr_mesh.hy ** 2)
+                    xmin = (fr_mesh.CenterCoor[ind].flatten())[0] - 3 * cellDiag
+                    xmax = (fr_mesh.CenterCoor[ind].flatten())[0] + 3 * cellDiag
+                    ymin = (fr_mesh.CenterCoor[ind].flatten())[1] - 3 * cellDiag
+                    ymax = (fr_mesh.CenterCoor[ind].flatten())[1] + 3 * cellDiag
                     indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
 
                     value_point = griddata(fr_mesh.CenterCoor[indBox],
@@ -1610,7 +1611,6 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
 
         iter = iter + 1
 
-<<<<<<< HEAD
     if head and lateral_diking:
         out_dict = {
           'l': height.flatten().flatten(),
@@ -1665,21 +1665,6 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
           'dle': dist_lower_end.flatten().flatten(),
           'dbmax': dist_max_breadth.flatten().flatten()
         }
-=======
-    out_dict = {
-        'l': height.flatten().flatten(),
-        'bmax': max_breadth.flatten().flatten(),
-        'bavg': avg_breadth.flatten().flatten(),
-        'bvar': var_breadth.flatten(),
-        'bhead': behind_head_breadth.flatten(),
-        'dle': dist_lower_end.flatten().flatten(),
-        'dbmax': dist_max_breadth.flatten().flatten(),
-        'lhead': l_head.flatten().flatten(),
-        'dbdz': dbdz_tail.flatten().flatten(),
-        'whmax': wmaxh.flatten().flatten(),
-        'phmax': pmaxh.flatten().flatten()
-    }
->>>>>>> 947ad89 (Took out plotting and adapted post processing.)
 
     return out_dict
 
