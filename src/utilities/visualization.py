@@ -523,7 +523,7 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
         labels = LabelProperties(variable, 'point', '2D')
 
     if point is None:
-        #point = [0.,0.]  #todo, understand if this version is needed by some other ways of calling the results 
+        #point = [0.,0.]  #todo, understand if this version is needed by some other ways of calling the results
         point = [[0., 0.]]
 
     point_values, time_list = get_fracture_variable_at_point(fracture_list,
