@@ -17,22 +17,19 @@ from level_set.FMM import fmm
 from level_set.level_set_utils import get_front_region
 from level_set.discontinuous_front_reconstruction import reconstruct_front, UpdateLists
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec
-from level_set.anisotropy import reconstruct_front_LS_gradient, get_toughness_from_Front, \
-    get_toughness_from_cellCenter_iter
+from level_set.anisotropy import reconstruct_front_LS_gradient, get_toughness_from_Front
 from level_set.anisotropy import find_zero_vertex
 from level_set.anisotropy import get_toughness_from_zeroVertex
-from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip
-from level_set.anisotropy import projection_from_ribbon
-from level_set.anisotropy import get_toughness_from_cellCenter
+from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell
 from tip.volume_integral import leak_off_stagnant_tip, find_corresponding_ribbon_cell
-from tip.tip_inversion import TipAsymInversion, StressIntensityFactor
+from tip.tip_inversion import StressIntensityFactor
 
 from systems.sol_sys_dispatcher import solve_width_pressure
 from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
-from properties import IterationProperties, instrument_start, instrument_close
+from properties import IterationProperties, instrument_start
 from fluid.reyNumb import turbulence_check_tip
 from utilities.postprocess_fracture import append_to_json_file
 from solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
@@ -400,35 +397,53 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Cprime_tip = mat_properties.Cprime[corr_ribbon]
 
     if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
-        if sim_properties.projMethod != 'LS_continousfront':
-            # get toughness from zero vertex
-            Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
-                                                                             Fr_lstTmStp.mesh,
-                                                                             mat_properties,
-                                                                             alpha_k,
-                                                                             l_k,
-                                                                             zrVrtx_newTip)
-        else:
-            toughness_from_zeroVertex = False
-            zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
-            if toughness_from_zeroVertex:
+        if not mat_properties.sizeDependentToughness[0] and not mat_properties.velocityDependentToughness[0]:
+            if sim_properties.projMethod != 'LS_continousfront':
                 # get toughness from zero vertex
-                Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
+                Kprime_tip = (32 / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
                                                                                  Fr_lstTmStp.mesh,
                                                                                  mat_properties,
                                                                                  alpha_k,
                                                                                  l_k,
                                                                                  zrVrtx_newTip)
             else:
+                # toughness_from_zeroVertex = False
+                # The if is redundant if we set it to false just before: I remove
+                # zrVrtx_newTip = zrVertx_k_with_fully_traversed.transpose()
+                # if toughness_from_zeroVertex:
+                #     # get toughness from zero vertex
+                #     Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_zeroVertex(EltsTipNew,
+                #                                                                      Fr_lstTmStp.mesh,
+                #                                                                      mat_properties,
+                #                                                                      alpha_k,
+                #                                                                      l_k,
+                #                                                                      zrVrtx_newTip)
+                # else:
                 # get toughness from Ffront
                 Kprime_tip = (32. / np.pi) ** 0.5 * get_toughness_from_Front(Ffront,
-                                                                               EltsTipNew,
-                                                                               EltTip_k,
-                                                                               fully_traversed_k,
-                                                                               Fr_lstTmStp.mesh,
-                                                                               mat_properties,
-                                                                               alpha_k,
-                                                                               get_from_mid_front = False)
+                                                                             EltsTipNew,
+                                                                             EltTip_k,
+                                                                             fully_traversed_k,
+                                                                             Fr_lstTmStp.mesh,
+                                                                             mat_properties,
+                                                                             alpha_k,
+                                                                             get_from_mid_front = False)
+        else:
+            Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+            Vel_k[Vel_k < 0] = 0
+            if mat_properties.sizeDependentToughness[0]:
+                Kprime_tip = (32 / np.pi) ** 0.5 * get_fracture_size_dependent_toughness(mat_properties, Ffront,
+                                                                                         EltsTipNew, Vel_k,
+                                                                                         Fr_lstTmStp.mesh,
+                                                                                         mat_properties.sizeDependentToughness[1],
+                                                                                         mat_properties.sizeDependentToughness[2])
+            elif mat_properties.velocityDependentToughness[0]:
+                Kprime_tip = (32 / np.pi) ** 0.5 * get_fracture_velocity_dependent_toughness(mat_properties, EltsTipNew,
+                                                                                             Vel_k,
+                                                                                             mat_properties.velocityDependentToughness[1],
+                                                                                             mat_properties.velocityDependentToughness[2],
+                                                                                             mat_properties.velocityDependentToughness[3])
+
     elif not mat_properties.inv_with_heter_K1c:
                 Kprime_tip = mat_properties.Kprime[corr_ribbon]
 
@@ -654,7 +669,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     Fr_kplus1.InCrack = InCrack_k
     if sim_properties.projMethod != 'LS_continousfront':
         Fr_kplus1.process_fracture_front()
-    else :
+    else:
         Fr_kplus1.fronts_dictionary = fronts_dictionary
         Fr_kplus1.Ffront = Ffront
         Fr_kplus1.number_of_fronts = number_of_fronts
@@ -690,8 +705,12 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     log.debug("Solved...")
     log.debug("Finding velocity of front...")
 
-    front_region, eval_region, sgndDist_k = toughness_direction_loop(Fr_kplus1.w, sgndDist_k, Fr_lstTmStp, sim_properties, mat_properties,
-                                                                     fluid_properties, timeStep, log, perfNode)
+    front_region, eval_region, sgndDist_k = toughness_direction_loop(Fr_kplus1.w, sgndDist_k, Fr_lstTmStp,
+                                                                     sim_properties, mat_properties, fluid_properties,
+                                                                     timeStep, log, perfNode)
+
+    if eval_region is None:
+        return front_region, None
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
     Fr_kplus1.v[Fr_kplus1.v < 0] = 0

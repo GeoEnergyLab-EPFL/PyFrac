@@ -17,7 +17,7 @@ from level_set.FMM import fmm
 def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_properties, fluid_properties, timeStep, log, perfNode):
 
     front_region = None
-    eval_region  = None
+    eval_region = None
 
     if mat_properties.TI_elasticity:
         relax_factor = 0.75
@@ -59,7 +59,7 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
             # plot_as_matrix(K, Fr_lstTmStp.mesh)
             if np.isnan(alpha_ribbon_k).any():
                 exitstatus = 11
-                return exitstatus, None
+                return exitstatus, None, None
 
         if mat_properties.inv_with_heter_K1c:
             Kprime_k = get_toughness_from_cellCenter_iter(alpha_ribbon_k,
@@ -119,7 +119,7 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
             perfNode.tipInv_data.append(perfNode_tipInv)
 
         if not status:
-            return exitstatus, None
+            return exitstatus, None, None
 
         # # Check for positive
         # if np.any(sgndDist_k[Fr_lstTmStp.EltRibbon]>0):
