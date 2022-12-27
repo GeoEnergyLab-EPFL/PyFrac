@@ -122,19 +122,33 @@ class MaterialProperties:
             self.SigmaO = confining_stress * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
-        self.anisotropic_K1c = anisotropic_K1c
-        if anisotropic_K1c:
-            try:
-                self.Kc1 = K1c_func(0,0,0)
-            except TypeError:
-                raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take three'
-                                 ' arguments, i.e. the coordinates x and y and the angle of propagation (0 to 2Pi) and return a toughness value.')
+        if isinstance(anisotropic_K1c, bool):
+            self.velocityDependentToughness = [False]
+            self.sizeDependentToughness = [False]
+            self.anisotropic_K1c = anisotropic_K1c
+            if anisotropic_K1c:
+                try:
+                    self.Kc1 = K1c_func(0,0,0)
+                except TypeError:
+                    raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take three'
+                                     ' arguments, i.e. the coordinates x and y and the angle of propagation (0 to 2Pi) and return a toughness value.')
+            else:
+                self.Kc1 = None
+        elif anisotropic_K1c[0] == "size":
+            self.anisotropic_K1c = True
+            self.velocityDependentToughness = [False]
+            self.sizeDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2]]
+        elif anisotropic_K1c[0] == "velocity":
+            self.anisotropic_K1c = True
+            self.velocityDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3]]
+            self.sizeDependentToughness = [False]
         else:
-            self.Kc1 = None
+            raise SystemExit('Type of toughness anisotropy not implemented.')
 
         if K1c_func is not None: # and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates and the local propagation direction given by the angle alpha
             self.inv_with_heter_K1c = True
+            self.anisotropic_K1c = True
             try:
                 K1c_func(0.,0.,0.)
             except TypeError:
