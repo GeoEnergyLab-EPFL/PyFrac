@@ -16,6 +16,7 @@ import copy
 from level_set.discontinuous_front_reconstruction import reconstruct_front_LS_gradient
 from tip.volume_integral import Integral_over_cell
 from mesh_obj.mesh import get_8neighbors
+from utilities.postprocess_fracture import get_l_Ffront_ordered_as_v
 
 
 def projection_from_ribbon(ribbon_elts, channel_elts, mesh, sgnd_dist, global_alpha = False):
@@ -1101,5 +1102,65 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
         #                annotate_cellName=False, annotate_edgeName=False, annotatePoints=False, grid=True,
         #                oldfront=Ffront, joinPoints=False, disregard_plus=True)
         return K1c
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_fracture_size_dependent_toughness(mat_props, Ffront, EltTip, velocity, mesh, kappa, sample_size):
+    """This function calculates a fracture length dependent value of the fracturing toughness
+
+    :param mat_props: material properties object
+    :param Ffront: numpy array of the intersection points of the fracture front with the grid.
+    :param EltTip: numpy array of the indices of the elements where the front passes through.
+    :param velocity: velocity of every front segment
+    :param mesh: mesh object of the evaluated fracture footprint - see related documentation
+    :param kappa: exponent of the size-dependent toughness.
+    :param sample_size: Size of the sample where the base value of toughness was measured
+    :return: An array of the fracturing toughness to use at the tip elements
+    """
+
+    # * --- We get the total length of the fracture front --- * #
+    # -- First get the fracture length in every tip element -- #
+    l = get_l_Ffront_ordered_as_v(Ffront, EltTip, mesh)[0]
+    # -- Get where the velocity of the fracture is zero -- #
+    propagating = np.where(velocity > 0.)
+    # -- Get the total length of the propagting front -- #
+    total_l = np.sum(l[propagating])
+
+    # * --- We get the toughness according to the standard formula --- * #
+    K1 = mat_props.K1c[0] * (total_l / sample_size) ** kappa
+    # -- Taking the maximum -- #
+    K1c = max([K1, mat_props.K1c[0]])
+
+    # * --- We return an array of the length of the tip elements with the corresponding toughness --- * #
+    return np.full((len(EltTip),), K1c, dtype=np.float64)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+def get_fracture_velocity_dependent_toughness(mat_props, EltTip, velocity, ref_vel, vel_exp, low_limit):
+    """This function calculates a fracture velocity dependent value of the fracturing toughness
+
+    :param mat_props: material properties object
+    :param EltTip: numpy array of the indices of the elements where the front passes through.
+    :param velocity: velocity of every front segment
+    :param ref_vel: the reference velocity where the toughness was measured
+    :param vel_exp: the exponent with which the velocity evolves
+    :param low_limit: the lower limit of fracturing toughness
+    :return: An array of the fracturing toughness to use at the tip elements
+    """
+
+    # * --- We get the prefactor --- * #
+    B = mat_props.K1c[0] / ref_vel ** vel_exp
+
+    # * --- We get the adapted toughness for every tip element --- * #
+    K1c = np.empty((len(EltTip),), dtype=np.float64) # set up the solution array
+    for i in range(len(EltTip)):
+        Kvel = B * velocity[i] ** vel_exp
+        K1c[i] = min([Kvel, mat_props.K1c[0] * low_limit])
+
+    # * --- Returning the array --- * #
+    return K1c
+
 
 #-----------------------------------------------------------------------------------------------------------------------
