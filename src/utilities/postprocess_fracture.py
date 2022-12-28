@@ -427,13 +427,13 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
-        for i in fracture_list:
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
+        for i in range(len(fracture_list)):
+            if isinstance(fracture_list[i].mesh, int):
+                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
             else:
-                fr_mesh = i.mesh
-            if len(i.source) != 0:
-                source_loc = fr_mesh.CenterCoor[i.source[0]]
+                fr_mesh = fracture_list[i].mesh
+            if len(fracture_list[i].source) != 0:
+                source_loc = fr_mesh.CenterCoor[fracture_list[i].source[0]]
             # coordinate of the zero vertex in the tip cells
             front_intersect_dist = np.sqrt((fracture_list[i].Ffront[::, [0, 2]].flatten() - source_loc[0]) ** 2
                                            + (fracture_list[i].Ffront[::, [1, 3]].flatten() - source_loc[1]) ** 2)
@@ -445,13 +445,13 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.min(front_intersect_dist)
             time_srs[i] = fracture_list[i].time
     elif variable == 'mesh':
-        for i in fracture_list:
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
+        for i in range(len(fracture_list)):
+            if isinstance(fracture_list[i].mesh, int):
+                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
             else:
-                fr_mesh = i.mesh
-            variable_list.append(fr_mesh)
-            time_srs.append(i.time)
+                fr_mesh = fracture_list[i].mesh
+            variable_list[i] = fr_mesh
+            time_srs[i] = fracture_list[i].time
 
     elif variable == 'efficiency' or variable == 'ef':
         for i in range(len(fracture_list)):
