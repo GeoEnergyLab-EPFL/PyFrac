@@ -136,11 +136,14 @@ class MaterialProperties:
                 self.Kc1 = None
         elif anisotropic_K1c[0] == "size":
             self.anisotropic_K1c = True
+            self.Kc1 = None
             self.velocityDependentToughness = [False]
-            self.sizeDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2]]
+            self.sizeDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3]]
         elif anisotropic_K1c[0] == "velocity":
             self.anisotropic_K1c = True
-            self.velocityDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3]]
+            self.Kc1 = None
+            self.velocityDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3],
+                                               anisotropic_K1c[4]]
             self.sizeDependentToughness = [False]
         else:
             raise SystemExit('Type of toughness anisotropy not implemented.')

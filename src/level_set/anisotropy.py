@@ -1106,7 +1106,7 @@ def get_toughness_from_Front(Ffront, tip_and_fully_trav, tip, fully_traversed, m
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_fracture_size_dependent_toughness(mat_props, Ffront, EltTip, velocity, mesh, kappa, sample_size):
+def get_fracture_size_dependent_toughness(Ffront, EltTip, velocity, mesh, params):
     """This function calculates a fracture length dependent value of the fracturing toughness
 
     :param mat_props: material properties object
@@ -1128,39 +1128,38 @@ def get_fracture_size_dependent_toughness(mat_props, Ffront, EltTip, velocity, m
     total_l = np.sum(l[propagating])
 
     # * --- We get the toughness according to the standard formula --- * #
-    K1 = mat_props.K1c[0] * (total_l / sample_size) ** kappa
+    K1 = params[3] * (total_l / params[2]) ** params[1]
     # -- Taking the maximum -- #
-    K1c = max([K1, mat_props.K1c[0]])
+    K1c = max([K1, params[3]])
 
-    # * --- We return an array of the length of the tip elements with the corresponding toughness --- * #
-    return np.full((len(EltTip),), K1c, dtype=np.float64)
+    # * --- We return the value of the toughness --- * #
+    return K1c
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_fracture_velocity_dependent_toughness(mat_props, EltTip, velocity, ref_vel, vel_exp, low_limit):
+def get_fracture_velocity_dependent_toughness(EltTip, velocity, params):
     """This function calculates a fracture velocity dependent value of the fracturing toughness
 
-    :param mat_props: material properties object
     :param EltTip: numpy array of the indices of the elements where the front passes through.
     :param velocity: velocity of every front segment
-    :param ref_vel: the reference velocity where the toughness was measured
-    :param vel_exp: the exponent with which the velocity evolves
-    :param low_limit: the lower limit of fracturing toughness
+    :param params: Parameters of the model contining a boolena in the first entry, the reference velocity where the
+                   toughness was measured in the second, the velocity exponent in the third, the lower limit
+                   multiplicator as fourth, and the base toughness as the fifth.
     :return: An array of the fracturing toughness to use at the tip elements
     """
 
     # * --- We get the prefactor --- * #
-    B = mat_props.K1c[0] / ref_vel ** vel_exp
+    B = params[4] / params[1] ** params[2]
 
     # * --- We get the adapted toughness for every tip element --- * #
     K1c = np.empty((len(EltTip),), dtype=np.float64) # set up the solution array
     for i in range(len(EltTip)):
-        Kvel = B * velocity[i] ** vel_exp
-        K1c[i] = min([Kvel, mat_props.K1c[0] * low_limit])
+        Kvel = B * velocity[i] ** params[2]
+        K1c[i] = min([Kvel, params[4] * params[3]])
 
-    # * --- Returning the array --- * #
-    return K1c
+    # * --- We have to average the toughness as it is a global property
+    return np.mean(K1c)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
