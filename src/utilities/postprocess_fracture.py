@@ -36,8 +36,8 @@ def convert_meshDict_to_mesh(fracture_list):
 
     :return:
     """
-    from src.mesh_obj.mesh import CartesianMesh
-    from src.fracture_obj.fracture import Fracture
+    from mesh_obj.mesh import CartesianMesh
+    from fracture_obj.fracture import Fracture
 
     if isinstance(fracture_list, list):
         for num, fr in enumerate(fracture_list):
@@ -81,7 +81,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         fracture_list(list):            -- a list of fractures.
 
     """
-    from src.mesh_obj.mesh import CartesianMesh
+    from mesh_obj.mesh import CartesianMesh
 
     log = logging.getLogger('PyFrac.load_fractures')
     log.info('Returning fractures...')
