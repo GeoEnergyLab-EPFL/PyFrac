@@ -82,6 +82,9 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # toughness iteration loop
     front_region, eval_region, sgndDist_k = toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_properties, fluid_properties, timeStep, log, perfNode)
 
+    if eval_region is None:
+        return front_region, None
+
     # gets the new tip elements, along with the length and angle of the perpendiculars drawn on front (also containing
     # the elements which are fully filled after the front is moved outward)
     if sim_properties.projMethod == 'ILSA_orig':
