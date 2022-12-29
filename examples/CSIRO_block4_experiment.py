@@ -107,21 +107,19 @@ if run:
     simulProp = SimulationProperties()
     simulProp.customPlotsOnTheFly = True
     simulProp.finalTime = 600                               # the time at which the simulation stops
-    simulProp.plotTSJump = 10                               # save and plot after every 5 time steps
+    #simulProp.plotTSJump = 10                               # save and plot after every 5 time steps
     simulProp.set_outputFolder("./Data/injection_line")     # the disk address where the files are saved
     simulProp.custom = custom_factory('time [s]', 'pressure [MPa]')
     simulProp.plotVar = ['ir', 'w', 'custom']
     #simulProp.plotVar = [ 'w', 'pf']
     simulProp.plotFigure = True
-    simulProp.frontAdvancing = 'explicit'
+    simulProp.frontAdvancing = 'implicit'
     simulProp.set_simulation_name('block4_ts_0.2_r_1.45')
     simulProp.maxSolverItrs = 500
-    simulProp.fixedTmStp = np.asarray([[0, 15., 200., 206, 223, 300, 600], [0.4, 2., 0.1, 0.03, 1,10,None]])
+    simulProp.fixedTmStp = np.asarray([[0, 15., 200., 206, 223, 300, 600], [0.4, 1., 0.1, 0.03, 1,10,None]])
     simulProp.maxFrontItrs = 50
-    # simulProp.tolFractFront = 0.003
-    # simulProp.solveSparse = True
-    # simulProp.projMethod = 'ILSA_orig'
-    # simulProp.Anderson_parameter = 20
+    #simulProp.projMethod = 'ILSA_orig'
+    simulProp.Anderson_parameter = 20
 
     # starting simulation with a static radial fracture with radius 20cm and pressure of 1MPa
     Fr_geometry = Geometry('radial', radius=1.45e-3)
@@ -148,7 +146,7 @@ if run:
         Fr_list, properties = load_fractures("./Data/injection_line",
                                              sim_name='block4_ts_0.2_r_1.45')
         Solid, Fluid, Injection, simulProp = properties
-        simulProp.frontAdvancing = 'explicit'
+        simulProp.frontAdvancing = 'implicit' #'explicit'
         simulProp.set_outputFolder("./Data/injection_line_restarted")
         Fr = Fr_list[-1]
 
