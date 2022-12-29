@@ -337,7 +337,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 return exitstatus, None
 
         # check for quasi-stagnant fractures
-        if k > 10 : # this is a value coming from experience
+        if k > 10 and inj_properties.modelInjLine: # this is a value coming from experience
             model = np.polyfit(np.arange(k-1), dwMAX_history[1:k], 1) # linear regression
             if (len(np.unique(norm_history)) < 6 and model[0] > -0.0001) or model[0] > 0.: # these are a values coming from experience
                 log.critical('The iteration on the front position is stacked in a loop --> forcing the fracture to be stagnant. '
