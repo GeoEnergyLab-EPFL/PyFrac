@@ -1118,6 +1118,7 @@ def get_fracture_size_dependent_toughness(Ffront, EltTip, velocity, mesh, params
     :param sample_size: Size of the sample where the base value of toughness was measured
     :return: An array of the fracturing toughness to use at the tip elements
     """
+    log = logging.getLogger('PyFrac.get_fracture_size_dependent_toughness')
 
     # * --- We get the total length of the fracture front --- * #
     # -- First get the fracture length in every tip element -- #
@@ -1131,6 +1132,9 @@ def get_fracture_size_dependent_toughness(Ffront, EltTip, velocity, mesh, params
     K1 = params[3] * (total_l / params[2]) ** params[1]
     # -- Taking the maximum -- #
     K1c = max([K1, params[3]])
+    if K1 < params[3]:
+        log.warning("The calculated fracture circumference is below the sample size! Fixed toughness to the value of "
+                    "the sample size!")
 
     # * --- We return the value of the toughness --- * #
     return K1c
@@ -1143,11 +1147,12 @@ def get_fracture_velocity_dependent_toughness(EltTip, velocity, params):
 
     :param EltTip: numpy array of the indices of the elements where the front passes through.
     :param velocity: velocity of every front segment
-    :param params: Parameters of the model contining a boolena in the first entry, the reference velocity where the
+    :param params: Parameters of the model contining a boolean in the first entry, the reference velocity where the
                    toughness was measured in the second, the velocity exponent in the third, the lower limit
                    multiplicator as fourth, and the base toughness as the fifth.
     :return: An array of the fracturing toughness to use at the tip elements
     """
+    # * --- Function according tu Liu, Lu 2022 --- * #
 
     # * --- We get the prefactor --- * #
     B = params[4] / params[1] ** params[2]

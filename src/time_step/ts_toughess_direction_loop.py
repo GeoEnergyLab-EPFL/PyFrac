@@ -79,7 +79,7 @@ def toughness_direction_loop(w_k, sgndDist_k, Fr_lstTmStp, sim_properties, mat_p
                                                mat_properties.Cij)
             if np.isnan(Eprime_k).any():
                 exitstatus = 11
-                return exitstatus, None
+                return exitstatus, None, None
         else:
             Eprime_k = None
 
