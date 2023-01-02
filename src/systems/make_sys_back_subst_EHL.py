@@ -700,27 +700,30 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     #               np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
     #               mat_prop.SigmaO[to_solve]
 
-    C._set_domain_and_codomain_IDX(to_solve, to_solve, )
-    pf_ch_prime = C._matvec(frac.w[to_solve])
+    if n_ch >0:
+        C._set_domain_and_codomain_IDX(to_solve, to_solve, )
+        pf_ch_prime = C._matvec(frac.w[to_solve])
 
-    if n_tip > 0:
-        C._set_domain_and_codomain_IDX(to_impose, to_solve)
-        pf_ch_prime = pf_ch_prime + C._matvec(imposed_val)
+        if n_tip > 0:
+            C._set_domain_and_codomain_IDX(to_impose, to_solve)
+            pf_ch_prime = pf_ch_prime + C._matvec(imposed_val)
 
-    if n_act > 0:
-        C._set_domain_and_codomain_IDX(active, to_solve)
-        pf_ch_prime = pf_ch_prime + C._matvec(wNplusOne[active])
+        if n_act > 0:
+            C._set_domain_and_codomain_IDX(active, to_solve)
+            pf_ch_prime = pf_ch_prime + C._matvec(wNplusOne[active])
 
-    pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
+        pf_ch_prime = pf_ch_prime + mat_prop.SigmaO[to_solve]
 
 
-    S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
-                  dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
-                  dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
-                  dt * G[to_solve] + \
-                  dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
-                  + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
-                  + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+        S[ch_indxs] = ch_AplusCf.dot(pf_ch_prime) + \
+                      dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
+                      dt * (FinDiffOprtr[ch_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
+                      dt * G[to_solve] + \
+                      dt * Q[to_solve] / frac.mesh.EltArea - LeakOff[to_solve] / frac.mesh.EltArea \
+                      + fluid_prop.compressibility * wcNplusHalf[to_solve] * frac.pFluid[to_solve]+ \
+                      + (ch_AplusCf.tocsr()[ch_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
+    else:
+        pf_ch_prime = []
 
     S[tip_indxs] = -(imposed_val - frac.w[to_impose]) + \
                    dt * (FinDiffOprtr[tip_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
