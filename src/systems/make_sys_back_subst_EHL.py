@@ -280,7 +280,8 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0], format='csr')
 
     # 1
-    A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    C_solve_solve = C[np.ix_(to_solve, to_solve)] # storing the references to make it faster in case we use toeplitz
+    A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C_solve_solve)
 
     # 2
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=dtype)
@@ -290,7 +291,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     # 3
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
+                                        ).dot(C_solve_solve)
 
     # 4
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
@@ -300,7 +301,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
     # 5
     A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
+                                        ).dot(C_solve_solve)
 
     # 6
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
@@ -309,7 +310,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                                                     [0], format='csr')).toarray()
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+    pf_ch_prime = np.dot(C_solve_solve, frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
                   mat_prop.SigmaO[to_solve]

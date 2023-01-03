@@ -57,3 +57,29 @@ def tip_correction_factors(FillFrac):
         diag_corr[e] = ac * coeff
 
     return diag_corr
+
+
+def tip_correction_(C_Crack, EltCrack, EltTip, FillFrac):
+    """
+    This function is used to apply the <<filling fraction tip correction>> according to:
+    Rider & Napier, 1985, Error Analysis and Design of Large-Scale Tabular Mining Stress Analyser.
+
+    :param C_Crack: squared elasticity matrix C[np.ix_(EltCrack, EltCrack)] of size len(EltCrack) x len(EltCrack)
+    :param EltCrack: list of elements in the crack
+    :param EltTip: list of elements in the tip
+    :param FillFrac: list of filling fractions ordered as EltTip. 1 means
+    :return: corrected matrix ready for the dot product
+
+    """
+    coeff = np.pi / 4.
+
+    EltTip_positions = np.where(np.in1d(EltCrack, EltTip))[0]
+
+    # filling fraction correction for element in the tip region
+    r = FillFrac - .25
+    indx = np.where(np.less(r, 0.1))[0]
+    r[indx] = 0.1
+    ac = (1 - r) / r
+    C_Crack[EltTip_positions, EltTip_positions] = C_Crack[EltTip_positions, EltTip_positions] * (1. + ac * coeff)
+
+    return C_Crack
