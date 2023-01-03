@@ -1053,7 +1053,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
             # known w
             if not w is None and p is None:
-                p_calculated[EltCrack] = np.dot(C_Crack, w[EltCrack])
+                p_calculated[EltCrack] = np.dot(C_Crack, w_calculated[EltCrack])
 
             # w and p both unknown
             if w is None and p is None:
