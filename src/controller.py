@@ -829,7 +829,16 @@ class Controller:
 
             elif status == 14:
                 # fracture fully closed
+
+                # custom plotting on the fly - postprocess fracture
+                if self.sim_prop.customPlotsOnTheFly:
+                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, self.solid_prop,
+                                                                          self.fluid_prop, self.injection_prop,
+                                                                          Fr_n_pls1)
+
+                # plot
                 self.output(Fr_n_pls1)
+
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed.\n\nDo you want to jump to"
                             " the time of next positive injection? [y/n]")
