@@ -21,6 +21,7 @@ from level_set.FMM import fmm
 from level_set.continuous_front_reconstruction import reconstruct_front_continuous, UpdateListsFromContinuousFrontRec, \
     get_xy_from_Ffront, get_cells_in_neighborhood, \
     ray_tracing_numpy
+from solid.elasticity_tip_correction import tip_correction_
 
 from tip.volume_integral import Integral_over_cell
 from solid.elasticity_isotropic_symmetric import self_influence
@@ -988,15 +989,9 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
             C[np.ix_(EltTip_sym, EltTip_sym)] = C_EltTip
 
         elif useBlockToeplizCompression:
+            # proceding with the tip correction
             C_Crack = C[np.ix_(EltCrack, EltCrack)]
-            EltTip_positions = np.where(np.in1d(EltCrack,EltTip))[0]
-
-            # filling fraction correction for element in the tip region
-            r = FillFrac - .25
-            indx = np.where(np.less(r,0.1))[0]
-            r[indx] = 0.1
-            ac = (1 - r) / r
-            C_Crack[EltTip_positions,EltTip_positions]=C_Crack[EltTip_positions,EltTip_positions] * (1. + ac * np.pi / 4.)
+            C_Crack = tip_correction_(C_Crack, EltCrack, EltTip, FillFrac)
 
             # known p
             if w is None and not p is None:
@@ -1058,7 +1053,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
 
             # known w
             if not w is None and p is None:
-                p_calculated[EltCrack] = np.dot(C_Crack, w[EltCrack])
+                p_calculated[EltCrack] = np.dot(C_Crack, w_calculated[EltCrack])
 
             # w and p both unknown
             if w is None and p is None:

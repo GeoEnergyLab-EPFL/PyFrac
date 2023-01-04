@@ -22,7 +22,7 @@ from mesh_obj.symmetry import *
 from numba import njit, uint64
 
 # implicit input
-from src.mesh_obj.symmetry import corresponding_elements_in_symmetric, get_symetric_elements, \
+from mesh_obj.symmetry import corresponding_elements_in_symmetric, get_symetric_elements, \
     get_active_symmetric_elements
 
 
