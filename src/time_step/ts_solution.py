@@ -8,6 +8,7 @@ All rights reserved. See the LICENSE.TXT file for more details.
 """
 
 # External imports
+import copy
 import numpy as np
 import logging
 
@@ -250,13 +251,22 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
     log.debug('Starting Fracture Front loop...')
 
+    # setting some variables
     norm = 10.
+    dwMAX = 10.
     k = 0
     previous_norm = 100 # initially set with a big value
     loop_already_forced = False
     force_1loop = False
+    force_convergence = False
+    norm_history = np.zeros(sim_properties.maxFrontItrs)
+    dwMAX_history = np.zeros(sim_properties.maxFrontItrs)
+    Fr_k_same_footprint = copy.deepcopy(Fr_k)
+
     # Fracture front loop to find the correct front location
-    while norm > sim_properties.tolFractFront or force_1loop:
+    while (norm > sim_properties.tolFractFront or force_1loop) and not force_convergence:
+        norm_history[k] = norm
+        dwMAX_history[k] = dwMAX
         k = k + 1
         log.debug(' ')
         log.debug('Iteration ' + repr(k))
@@ -268,6 +278,8 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
 
         perfNode_extFront = instrument_start('extended front', perfNode)
         # find the new footprint and solve the elastohydrodynamic equations to to get the new fracture
+
+        old_w = copy.deepcopy(Fr_k.w)
         (exitstatus, Fr_k) = injection_extended_footprint(Fr_k.w,
                                                           Frac,
                                                           C,
@@ -280,6 +292,12 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                                                           sim_properties,
                                                           perfNode_extFront,
                                                           front_previous_iter=Fr_k.Ffront)
+        if exitstatus == 1:
+            dwMAX = np.max(Fr_k.w - old_w)
+
+        # from level_set.continuous_front_reconstruction import plot_two_fronts
+        # plot_two_fronts(Fr_k.mesh, newfront=Fr_k.Ffront, oldfront=old_Ffront, fig=None, grid=True, cells=None,
+        #                 my_marker="_")
 
         if exitstatus == 1:
             # norm is evaluated by dividing the difference in the area of the tip cells between two successive
@@ -317,6 +335,16 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                           str(abs((previous_norm-norm)/norm)) + ' < 0.0001')
                 exitstatus = 15
                 return exitstatus, None
+
+        # check for quasi-stagnant fractures
+        if k > 10 and inj_properties.modelInjLine: # this is a value coming from experience
+            model = np.polyfit(np.arange(k-1), dwMAX_history[1:k], 1) # linear regression
+            if (len(np.unique(norm_history)) < 6 and model[0] > -0.0001) or model[0] > 0.: # these are a values coming from experience
+                log.critical('The iteration on the front position is stacked in a loop --> forcing the fracture to be stagnant. '
+                             'Check if it makes sense to you. '
+                             'This can happen in case of an almost non-propagating fracture')
+                Fr_k = Fr_k_same_footprint
+                force_convergence = True
 
         if sim_properties.get_volumeControl():
             # preventing infinite or not effective loops
