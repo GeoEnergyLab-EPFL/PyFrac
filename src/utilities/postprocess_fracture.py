@@ -36,7 +36,9 @@ def convert_meshDict_to_mesh(fracture_list):
 
     :return:
     """
-    from src.mesh_obj.mesh import CartesianMesh
+    from mesh_obj.mesh import CartesianMesh
+    from fracture_obj.fracture import Fracture
+
 
     if isinstance(fracture_list, list):
         for num, fr in enumerate(fracture_list):
@@ -79,7 +81,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         fracture_list(list):            -- a list of fractures.
 
     """
-    from src.mesh_obj.mesh import CartesianMesh
+    from mesh_obj.mesh import CartesianMesh
 
     log = logging.getLogger('PyFrac.load_fractures')
     log.info('Returning fractures...')
@@ -505,33 +507,33 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                              ' See the saveRegime falg of SimulationProperties class.')
 
     elif variable == 'source elements' or variable == 'se':
-        for i in range(len(fracture_list)):
+        for i, fr in enumerate(fracture_list):
             variable_list[i] = fracture_list[i].source
             time_srs[i] = fracture_list[i].time
 
     elif variable == 'injection line pressure' or variable == 'ilp':
-        for fr in fracture_list:
+        for i, fr in enumerate(fracture_list):
             if fr.pInjLine is None:
                 raise ValueError("It seems that injection line is not solved. Injection line pressure is not available")
             else:
-                variable_list.append(fr.pInjLine)
-            time_srs.append(fr.time)
+                variable_list[i] = fr.pInjLine
+            time_srs[i] = fr.time
 
     elif variable == 'injection rate' or variable == 'ir':
-        for fr in fracture_list:
+        for i, fr in enumerate(fracture_list):
             if fr.injectionRate is None:
                 raise ValueError("It seems that injection line is not solved. Injection rate is not available")
             else:
-                variable_list.append(fr.injectionRate)
-            time_srs.append(fr.time)
+                variable_list[i] = fr.injectionRate
+            time_srs[i] = fr.time
 
     elif variable == 'total injection rate' or variable == 'tir':
-        for fr in fracture_list:
+        for i, fr in enumerate(fracture_list):
             if fr.injectionRate is None:
                 raise ValueError("It seems that injection line is not solved. Injection rate is not available")
             else:
-                variable_list.append(np.sum(fr.injectionRate))
-            time_srs.append(fr.time)
+                variable_list[i] = (np.sum(fr.injectionRate))
+            time_srs[i] = fr.time
     else:
         raise ValueError('The variable type is not correct.')
 

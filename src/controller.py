@@ -91,9 +91,23 @@ class Controller:
         self.lastSuccessfulTS = Fracture.time
         self.maxTmStp = 0           # the maximum time step taken uptil now by the controller.
 
+        # reorder the list of self.sim_prop.plotVar such that custom is at the end. This is needed for easier Figures handling
+        if 'custom' in self.sim_prop.plotVar:
+            self.sim_prop.plotVar.remove('custom')
+            self.sim_prop.plotVar.append('custom')
 
         # make a list of Nones with the size of the number of variables to plot during simulation
-        self.Figures = [None for i in range(len(self.sim_prop.plotVar))]
+        if 'custom' in self.sim_prop.plotVar:
+            if hasattr(self.sim_prop.custom, 'number_of_plots'):
+                self.number_of_figures = len(self.sim_prop.plotVar) - 1 + self.sim_prop.custom.number_of_plots
+            else:
+                message = 'CUSTOM CLASS ERROR: \n' \
+                          'add the attribute <number_of_plots> to the custom class with the number of plots you want'
+                raise SystemExit(message)
+        else:
+            self.number_of_figures = len(self.sim_prop.plotVar)
+
+        self.Figures = [None for i in range(self.number_of_figures)]
 
         # Find the times where any parameter changes. These times will be added to the time series where the solution is
         # required to ensure the time is hit during time stepping and the change is applied at the exact time.
@@ -321,7 +335,9 @@ class Controller:
 
                 # custom plotting on the fly
                 if self.sim_prop.customPlotsOnTheFly:
-                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, Fr_n_pls1)
+                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, self.solid_prop,
+                                                                          self.fluid_prop, self.injection_prop,
+                                                                          Fr_n_pls1)
 
                 # output
                 if self.sim_prop.plotFigure or self.sim_prop.saveToDisk:
@@ -827,7 +843,16 @@ class Controller:
 
             elif status == 14:
                 # fracture fully closed
+
+                # custom plotting on the fly - postprocess fracture
+                if self.sim_prop.customPlotsOnTheFly:
+                    Fr_n_pls1 = self.sim_prop.custom.postprocess_fracture(self.sim_prop, self.solid_prop,
+                                                                          self.fluid_prop, self.injection_prop,
+                                                                          Fr_n_pls1)
+
+                # plot
                 self.output(Fr_n_pls1)
+
                 if self.PstvInjJmp is None:
                     inp = input("Fracture is fully closed.\n\nDo you want to jump to"
                             " the time of next positive injection? [y/n]")
@@ -1098,16 +1123,19 @@ class Controller:
                     plot_TS_exceeded = True
 
             if plot_TP_exceeded or in_req_TSrs or plot_TS_exceeded:
-
-                for index, plt_var in enumerate(self.sim_prop.plotVar):
+                for index_pltvar, plt_var in enumerate(self.sim_prop.plotVar):
                     log.info("Plotting solution at " + repr(Fr_advanced.time) + "...")
                     plot_prop = PlotProperties(color_map=EPFLcolor())
 
-                    if self.Figures[index]:
-                        axes = self.Figures[index].get_axes()   # save axes from last figure
-                        plt.figure(self.Figures[index].number)
-                        plt.clf()                              # clear figure
-                        self.Figures[index].add_axes(axes[0])   # add axis to the figure
+                    if plt_var != 'custom': #assuming custom the last in sim_prop.plotVar
+                        index = index_pltvar
+                        if self.Figures[index]:
+                            axes = self.Figures[index].get_axes()  # save axes from last figure
+                            plt.figure(self.Figures[index].number)
+                            plt.clf()  # clear figure
+                            self.Figures[index].add_axes(axes[0])  # add axis to the figure
+                    else:
+                        index = np.arange(index_pltvar, self.number_of_figures, 1)
 
                     if plt_var == 'footprint':
                         # footprint is plotted if variable to plot is not given
@@ -1142,7 +1170,16 @@ class Controller:
                                               fig=self.Figures[index])
 
                     elif plt_var == 'custom':
-                        self.Figures[index] = self.sim_prop.custom.custom_plot(self.sim_prop, fig=self.Figures[index])
+                        for counter_local_in_custom_plot, index_i in enumerate(index):
+                            if self.Figures[index_i]:
+                                axes = self.Figures[index_i].get_axes()  # save axes from last figure
+                                plt.figure(self.Figures[index_i].number)
+                                plt.clf()  # clear figure
+                                self.Figures[index_i].add_axes(axes[0])  # add axis to the figure
+
+                            self.Figures[index_i] = self.sim_prop.custom.custom_plot(counter_local_in_custom_plot+1, self.sim_prop, fig=self.Figures[index_i])
+                            plt.ion()
+                            plt.pause(0.0001)
                     elif plt_var in ('fluid velocity as vector field','fvvf','fluid flux as vector field','ffvf'):
                         if self.fluid_prop.viscosity == 0. :
                             raise SystemExit('ERROR: if the fluid viscosity is equal to 0 does not make sense to ask a plot of the fluid velocity or fluid flux')
@@ -1198,7 +1235,7 @@ class Controller:
                                               fig=self.Figures[index])
 
                     # plotting closed cells
-                    if len(Fr_advanced.closed) > 0:
+                    if len(Fr_advanced.closed) > 0 and plt_var != 'custom':
                         plot_prop.lineColor = 'orangered'
                         self.Figures[index] = Fr_advanced.mesh.identify_elements(Fr_advanced.closed,
                                                                                 fig=self.Figures[index],
@@ -1207,10 +1244,11 @@ class Controller:
                                                                                 print_number=False)
                     plt.ion()
                     plt.pause(0.4)
-                    
+                # --- end loop on the figures ---
+
                 # set figure position
                 if self.setFigPos:
-                    for i in range(len(self.sim_prop.plotVar)):
+                    for i in range(self.number_of_figures):
                         plt.figure(i + 1)
                         mngr = plt.get_current_fig_manager()
                         x_offset = 650 * i

@@ -222,7 +222,7 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
 
     elif variable in unidimensional_variables:
         fig = plot_variable_vs_time(time_list,
-                                    var_val_list,
+                                    var_val_copy, # var_val_list,
                                     fig=fig,
                                     plot_prop=plot_prop,
                                     label=labels.legend)
@@ -527,7 +527,8 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
         labels = LabelProperties(variable, 'point', '2D')
 
     if point is None:
-        point = [0., 0.]
+        #point = [0.,0.]  #todo, understand if this version is needed by some other ways of calling the results
+        point = [[0., 0.]]
 
     point_values, time_list = get_fracture_variable_at_point(fracture_list,
                                                             variable,
@@ -569,8 +570,8 @@ def plot_fracture_list_at_point(fracture_list, variable='width', point=None, plo
                        labels=labels_2D)
 
     ax_image = fig_image.get_axes()[0]
-    ax_image.plot([point[0]], [point[1]], 'ko')
-
+    #ax_image.plot([point[0]], [point[1]], 'ko') #todo, understand if this version is needed by some other ways of plotting
+    ax_image.plot([point[0][0]], [point[0][1]], 'ko')
     return fig
 
 #-----------------------------------------------------------------------------------------------------------------------

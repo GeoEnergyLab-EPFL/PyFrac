@@ -95,8 +95,8 @@ def matvec_fast(uk, elemX, elemY, dimY, nx, C_toeplitz_coe, C_precision):
 
 @njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def getFast(elemX, elemY, nx, C_toeplitz_coe, C_precision):
-    dimX = elemX.size  # number of elements to consider on x axis
-    dimY = elemY.size  # number of elements to consider on y axis
+    dimX = elemX.size  # number of elements to consider on x axis (columns number)
+    dimY = elemY.size  # number of elements to consider on y axis (rows    number)
 
     if dimX == 0 or dimY == 0:
         return np.empty((dimY, dimX), dtype=C_precision)
@@ -488,14 +488,46 @@ class elasticity_matrix_toepliz(LinearOperator):
     def __getitem__(self, elementsXY):
         """
         critical call: it should be as fast as possible
-        :param elemX: (numpy array) columns to take
-        :param elemY: (numpy array) rows to take
+        :param columns: (numpy array) columns to take
+        :param rows: (numpy array) rows to take
         :return: submatrix of C
+
+        In the following matrix: (note x and y directions)
+        y   o o o o o
+        /\  o o o o o
+        |   o o o o o
+        |   o o o o o
+        -------> x
+
+        elemX = elementsXY[1].flatten() are the colums to take
+        elemY = elementsXY[0].flatten() are the rows to take
         """
 
-        elemX = elementsXY[1].flatten()
-        elemY = elementsXY[0].flatten()
-        return self.f_getFast(elemX, elemY, self.nx, self.C_toeplitz_coe, self.C_precision)
+        columns = elementsXY[1].flatten()
+        rows = elementsXY[0].flatten()
+
+        n_rows = len(rows)
+        n_colums = len(columns)
+
+        # check if we are asking for an empty matrix
+        if n_colums * n_rows == 0:
+            return np.ndarray((n_rows,n_colums))
+
+        C_local = self.f_getFast(columns, rows, self.nx, self.C_toeplitz_coe, self.C_precision)
+        # check if we need to correct the diagonal values
+        if self.enable_tip_corr:
+            test_SDandC = (n_rows == n_colums) and (np.sum(rows == columns) == n_rows)
+            self._set_tip_el_in_codomain(rows, columns, same_domain_and_codomain=test_SDandC)
+            if test_SDandC:
+                C_local[self.tipINDX_codomain_and_domain, self.tipINDX_codomain_and_domain] = \
+                    C_local[self.tipINDX_codomain_and_domain, self.tipINDX_codomain_and_domain] + self.tipcorr[self.tip_in_domain_and_codomain]
+            else:
+                EltTip_positions_columns = self.tipINDX_codomain_and_domain
+                EltTip_positions_rows = np.where(np.in1d(rows, self.tip_in_domain_and_codomain))[0]
+                C_local[EltTip_positions_rows, EltTip_positions_columns] = \
+                C_local[EltTip_positions_rows, EltTip_positions_columns] + self.tipcorr[self.tip_in_domain_and_codomain]
+
+        return C_local
 
 
     def _matvec_fast(self, uk):
@@ -537,7 +569,7 @@ class elasticity_matrix_toepliz(LinearOperator):
             else:
                 # todo: In the case of using HMat and activating a width constraint in a number of cells below the
                 #  threshold, the code can break due to multiple definitions of the function f_matvec_fast.
-                # res = self.HMAT._matvec(uk)
+                #res = self.HMAT._matvec(uk)
                 res = self.f_matvec_fast(np.float64(uk),
                                           self.domain_INDX,
                                           self.codomain_INDX,
@@ -613,19 +645,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         self._changeShape(codomainIDX.size)
 
         if self.enable_tip_corr:
-            # find the positions of the tip elements in the codomain
-            self.tip_in_codomain, self.tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True, return_indices=True)
-
-            if not same_domain_and_codomain:
-                # find the tip elements in common between domain and codomain
-                self.tip_in_domain_and_codomain = np.intersect1d(self.domain_INDX, self.tip_in_codomain, assume_unique=True)
-
-                # find the positions of the common tip elements between codomain and domain, in the codomain
-                waste, partial_INDX_codomain, waste = np.intersect1d(self.tip_in_codomain, self.tip_in_domain_and_codomain, assume_unique=True, return_indices=True)
-                self.tipINDX_codomain_and_domain = self.tipINDX_codomain[partial_INDX_codomain]
-            else:
-                self.tip_in_domain_and_codomain = self.tip_in_codomain
-                self.tipINDX_codomain_and_domain = self.tipINDX_codomain
+            self._set_tip_el_in_codomain(self.domain_INDX, self.codomain_INDX, same_domain_and_codomain)
         else:
             self.tip_in_domain_and_codomain = []
             self.tipINDX_codomain_and_domain = []
@@ -633,6 +653,30 @@ class elasticity_matrix_toepliz(LinearOperator):
         if self.useHMATdot:
             self.HMAT._set_domain_and_codomain_IDX(domainIDX, codomainIDX)
 
+    def _set_tip_el_in_codomain(self,domain_INDX, codomain_INDX, same_domain_and_codomain):
+        """
+        General example:
+        domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
+        codomain indexes are [0, 2] of elements returned after the dot product
+        o o o o    0 <-0    x <-0
+        o o o o    x <-1  = o <-1
+        o o o o    x <-2    x <-2
+        o o o o    0 <-3    o <-3
+        """
+        # find the positions of the tip elements in the codomain
+        self.tip_in_codomain, self.tipINDX_codomain, waste = np.intersect1d(codomain_INDX, self.EltTip,
+                                                                            assume_unique=True, return_indices=True)
+        if not same_domain_and_codomain:
+            # find the tip elements in common between domain and codomain
+            self.tip_in_domain_and_codomain = np.intersect1d(domain_INDX, self.tip_in_codomain, assume_unique=True)
+
+            # find the positions of the common tip elements between codomain and domain, in the codomain
+            waste, partial_INDX_codomain, waste = np.intersect1d(self.tip_in_codomain, self.tip_in_domain_and_codomain,
+                                                                 assume_unique=True, return_indices=True)
+            self.tipINDX_codomain_and_domain = self.tipINDX_codomain[partial_INDX_codomain]
+        else:
+            self.tip_in_domain_and_codomain = self.tip_in_codomain
+            self.tipINDX_codomain_and_domain = self.tipINDX_codomain
 
     def _set_tipcorr(self, FillFrac, EltTip):
         """
