@@ -49,13 +49,19 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                    Fr_lstTmStp.v, Fr_lstTmStp.mesh,
                                                                    mat_properties.sizeDependentToughness))
         log.debug("The current toughness is: " + str(Kprime_tip[0]))
+
+        mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
+                                                                             , float)
+        mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
+
     elif mat_properties.velocityDependentToughness[0]:
         Kprime_tip = np.full((len(Fr_lstTmStp.EltTip, ),), (32 / np.pi) ** 0.5 *
                              get_fracture_velocity_dependent_toughness(Fr_lstTmStp.EltTip, Fr_lstTmStp.v,
                                                                        mat_properties.velocityDependentToughness))
-    mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
-                                                                         , float)
-    mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
+
+        mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
+                                                                             , float)
+        mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
     if len(Fr_lstTmStp.InCrack[np.where(Fr_lstTmStp.InCrack == 1)]) > sim_properties.maxElementIn and \
             sim_properties.meshReductionPossible:
