@@ -205,6 +205,11 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                 else:
                     fr.mesh = mesh_ind
 
+    # saving the reference to the proper mesh! (i am not making a copy of the mesh per se)
+    for i in range(len(fracture_list)):
+        fr_i= fracture_list[i]
+        if isinstance(fr_i.mesh, int):
+            fracture_list[i].mesh = fracture_list[fr_i.mesh].mesh
 
     return fracture_list, properties
 
