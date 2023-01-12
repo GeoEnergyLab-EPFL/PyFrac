@@ -89,7 +89,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     # set the Tip correction as Rider & Napier, 1985.
     # it can be shown that tip correction and R0 kernel are performing better than R4 kernel and this type of tip correction
-
+    #if hasattr(C,"_set_tipcorr"):
     C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip)
     C._set_kerneltype_as_R0()
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
@@ -114,6 +114,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  empty, #stagnant
                                                  doublefracturedictionary= doublefracturedictionary,
                                                  inj_same_footprint = True)
+    #if hasattr(C,"enable_tip_corr"):
     C.enable_tip_corr = False
     C._set_kerneltype_as_it_used_to_be()
 
