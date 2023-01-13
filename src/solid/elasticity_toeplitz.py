@@ -7,6 +7,8 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 # external imports
+import copy
+
 import numpy as np
 from numba import njit, prange, boolean, uint16, uint64, int64
 import numba as nb
@@ -377,8 +379,11 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.enable_tip_corr = False  # one needs to specifically activate it in case it is needed
         self.EltTip = None  # list of tip elem. IDs
         self.tipcorr = None # vector of size & ordering as self.EltTip with the correction factors
-        self.tipINDX_codomain = None # list of indexes of tip elem. in the codomain
-        self.tip_in_codomain = None # list of tip elem. IDs in the codomain
+        self.tips_in_domain_idxs = None # list of indexes of tip elem. in the domain
+        self.tips_in_codomain_idxs = None # list of indexes of tip elem. in the codomain
+        self.tip_in_domain_and_codomain = None # list of tip elem. IDs in both the codomain and domain
+        #self.tipINDX_codomain = None # todo: remove it
+        #self.tip_in_codomain = None # todo: remove it
 
         # ---- LOAD THE OBJ ----
         self.reload(Mesh)
@@ -513,19 +518,30 @@ class elasticity_matrix_toepliz(LinearOperator):
         if n_colums * n_rows == 0:
             return np.ndarray((n_rows,n_colums))
 
-        C_local = self.f_getFast(columns, rows, self.nx, self.C_toeplitz_coe, self.C_precision)
+        C_local = copy.deepcopy(self.f_getFast(columns, rows, self.nx, self.C_toeplitz_coe, self.C_precision))
         # check if we need to correct the diagonal values
         if self.enable_tip_corr:
-            test_SDandC = (n_rows == n_colums) and (np.sum(rows == columns) == n_rows)
-            self._set_tip_el_in_codomain(rows, columns, same_domain_and_codomain=test_SDandC)
+            test_SDandC = ((n_rows == n_colums) and (np.sum(rows == columns) == n_rows))
             if test_SDandC:
-                C_local[self.tipINDX_codomain_and_domain, self.tipINDX_codomain_and_domain] = \
-                    C_local[self.tipINDX_codomain_and_domain, self.tipINDX_codomain_and_domain] + self.tipcorr[self.tip_in_domain_and_codomain]
+                tips_in_columns_boolean = np.isin(columns, self.EltTip, assume_unique=True)
+                tips_in_columns_idxs = np.nonzero(tips_in_columns_boolean)
+                tips_in_columns_names = columns[tips_in_columns_idxs]
+                C_local[tips_in_columns_idxs, tips_in_columns_idxs] = (self.diag_val + self.tipcorr[tips_in_columns_names])
             else:
-                EltTip_positions_columns = self.tipINDX_codomain_and_domain
-                EltTip_positions_rows = np.where(np.in1d(rows, self.tip_in_domain_and_codomain))[0]
-                C_local[EltTip_positions_rows, EltTip_positions_columns] = \
-                C_local[EltTip_positions_rows, EltTip_positions_columns] + self.tipcorr[self.tip_in_domain_and_codomain]
+                common_rows_columns = np.intersect1d(rows, columns)
+                common_rows_columns_tips = np.intersect1d(common_rows_columns, self.EltTip, assume_unique=True)
+                if len(common_rows_columns_tips) > 0:
+                    # mind that the tips in rows and columns might be in different order within each array
+                    tips_in_columns_idxs = np.where(columns == common_rows_columns_tips[:, None])[1]
+                    tips_in_rows_idxs = np.where(rows == common_rows_columns_tips[:, None])[1]
+
+                    # example of what the previous operation does:
+                    #b = np.asarray([1, 5, 12, 3])
+                    #a = np.asarray([12, 1])
+                    #c = np.where(b == a[:, None])[1]
+                    # c is [2,0]
+
+                    C_local[tips_in_rows_idxs, tips_in_columns_idxs] = (self.diag_val + self.tipcorr[common_rows_columns_tips])
 
         return C_local
 
@@ -559,6 +575,8 @@ class elasticity_matrix_toepliz(LinearOperator):
 
         elif self.enable_tip_corr:
             if self.right_precJ:
+                # todo: check tip correction as when I wrote this message I found that np.intersect1d is sorting the result and it created a bug for such reason
+                # todo: self.tipINDX_codomain is not defined anymore
                 uk = self._precJm1dotvec(uk, tipINDX_codomain=self.tipINDX_codomain)
 
             # the tip correction acts only on the diagonal elements, so:
@@ -581,20 +599,21 @@ class elasticity_matrix_toepliz(LinearOperator):
             if self.left_precJ:
                 # TIPCORRECTION & LEFT PRECONDITIONER
                 # (A+tipcorr*I)*uk
-                res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
+                # todo: check tip correction as when I wrote this message I found that np.intersect1d is sorting the result and it created a bug for such reason
+                # todo: self.tipINDX_codomain is not defined anymore
+                res[self.tips_in_codomain_idxs] = res[self.tips_in_codomain_idxs] + uk[self.tips_in_domain_idxs] * self.tipcorr[self.tip_in_domain_and_codomain]
                 res = self._precJm1dotvec(res, tipINDX_codomain = self.tipINDX_codomain)
             elif self.right_precJ:
                 # TIPCORRECTION & RIGHT PRECONDITIONER
                 # (A+tipcorr*I)*res
-                res[self.tipINDX_codomain] = res[self.tipINDX_codomain] + uk[self.tipINDX_codomain] * self.tipcorr[self.tip_in_codomain]
+                res[self.tips_in_codomain_idxs] = res[self.tips_in_codomain_idxs] + uk[self.tips_in_domain_idxs] * self.tipcorr[self.tip_in_domain_and_codomain]
             else:
                 # ONLY TIPCORRECTION - NO PRECONDITIONER
-                if len(self.tipINDX_codomain_and_domain) > 0:
-                    res[self.tipINDX_codomain_and_domain] = res[self.tipINDX_codomain_and_domain] + uk[self.tipINDX_codomain_and_domain] * self.tipcorr[self.tip_in_domain_and_codomain]
+                if len(self.tip_in_domain_and_codomain) > 0:
+                    res[self.tips_in_codomain_idxs] = res[self.tips_in_codomain_idxs] + uk[self.tips_in_domain_idxs] * self.tipcorr[self.tip_in_domain_and_codomain]
             return res
         else:
             raise SystemExit('elasticity matvec: case not currently implemented')
-
 
     def _precJm1dotvec(self, uk, tipINDX_codomain=None):
         # preconditioning:
@@ -606,6 +625,8 @@ class elasticity_matrix_toepliz(LinearOperator):
         Pm1_vec = np.full(len(uk), 1. / self.diag_val)
         if tipINDX_codomain is None:
             # find the positions of the tip elements in the codomain
+            # todo: check tip correction as when I wrote this message I found that np.intersect1d is sorting the result and it created a bug for such reason
+            # todo: self.tipINDX_codomain is not defined anymore
             waste, tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True, return_indices=True)
         Pm1_vec[tipINDX_codomain] = 1. / (self.diag_val + self.tipcorr[self.EltTip])
         return Pm1_vec * uk
@@ -621,8 +642,10 @@ class elasticity_matrix_toepliz(LinearOperator):
         Pm1_vec = np.full(len(uk), self.diag_val)
         if tipINDX_codomain is None:
             # find the positions of the tip elements in the codomain
+            # todo: check tip correction as when I wrote this message I found that np.intersect1d is sorting the result and it created a bug for such reason
             waste, tipINDX_codomain, waste = np.intersect1d(self.codomain_INDX, self.EltTip, assume_unique=True,
                                                          return_indices=True)
+            tips_in_codomain_idxs = np.where(self.codomain_INDX == self.EltTip[:, None])[1]
         Pm1_vec[tipINDX_codomain] = (self.diag_val + self.tipcorr[self.EltTip])
         return Pm1_vec * uk
 
@@ -645,15 +668,16 @@ class elasticity_matrix_toepliz(LinearOperator):
         self._changeShape(codomainIDX.size)
 
         if self.enable_tip_corr:
-            self._set_tip_el_in_codomain(self.domain_INDX, self.codomain_INDX, same_domain_and_codomain)
+            self._set_tip_el_in_codomain(domainIDX, codomainIDX, same_domain_and_codomain)
         else:
-            self.tip_in_domain_and_codomain = []
-            self.tipINDX_codomain_and_domain = []
+            self.tips_in_domain_idxs = []  # list of indexes of tip elem. in the domain
+            self.tips_in_codomain_idxs = []  # list of indexes of tip elem. in the codomain
+            self.tip_in_domain_and_codomain = []  # list of tip elem. IDs in both the codomain and domain
 
         if self.useHMATdot:
             self.HMAT._set_domain_and_codomain_IDX(domainIDX, codomainIDX)
 
-    def _set_tip_el_in_codomain(self,domain_INDX, codomain_INDX, same_domain_and_codomain):
+    def _set_tip_el_in_codomain(self, domain_INDX, codomain_INDX, same_domain_and_codomain):
         """
         General example:
         domain indexes are [1 , 2] of NON ZERO elements used to make the dot product
@@ -663,20 +687,36 @@ class elasticity_matrix_toepliz(LinearOperator):
         o o o o    x <-2    x <-2
         o o o o    0 <-3    o <-3
         """
-        # find the positions of the tip elements in the codomain
-        self.tip_in_codomain, self.tipINDX_codomain, waste = np.intersect1d(codomain_INDX, self.EltTip,
-                                                                            assume_unique=True, return_indices=True)
-        if not same_domain_and_codomain:
-            # find the tip elements in common between domain and codomain
-            self.tip_in_domain_and_codomain = np.intersect1d(domain_INDX, self.tip_in_codomain, assume_unique=True)
+        if same_domain_and_codomain:
+            tips_in_codomainIDX_boolean = np.isin(codomainIDX, self.EltTip, assume_unique=True)
+            tips_in_codomainIDX_idxs = np.nonzero(tips_in_codomainIDX_boolean)
+            tips_in_codomainIDX_names = codomainIDX[tips_in_codomainIDX_idxs]
 
-            # find the positions of the common tip elements between codomain and domain, in the codomain
-            waste, partial_INDX_codomain, waste = np.intersect1d(self.tip_in_codomain, self.tip_in_domain_and_codomain,
-                                                                 assume_unique=True, return_indices=True)
-            self.tipINDX_codomain_and_domain = self.tipINDX_codomain[partial_INDX_codomain]
+            self.tips_in_domain_idxs = tips_in_codomainIDX_idxs
+            self.tips_in_codomain_idxs = tips_in_codomainIDX_idxs
+            self.tip_in_domain_and_codomain = tips_in_codomainIDX_names
+
         else:
-            self.tip_in_domain_and_codomain = self.tip_in_codomain
-            self.tipINDX_codomain_and_domain = self.tipINDX_codomain
+            common_codomain_domain = np.intersect1d(codomain_INDX, domain_INDX)
+            common_codomain_domain_tips = np.intersect1d(common_codomain_domain, self.EltTip, assume_unique=True)
+            if len(common_codomain_domain_tips) > 0:
+                # mind that the tips in rows and columns might be in different order within each array
+                tips_in_domain_idxs = np.where(domain_INDX == common_codomain_domain_tips[:, None])[1]
+                tips_in_codomain_idxs = np.where(codomain_INDX == common_codomain_domain_tips[:, None])[1]
+
+                # example of what the previous operation does:
+                # b = np.asarray([1, 5, 12, 3])
+                # a = np.asarray([12, 1])
+                # c = np.where(b == a[:, None])[1]
+                # c is [2,0]
+                self.tips_in_domain_idxs = tips_in_domain_idxs
+                self.tips_in_codomain_idxs = tips_in_codomain_idxs
+                self.tip_in_domain_and_codomain = codomain_INDX[tips_in_codomain_idxs]
+            else:
+                self.tips_in_domain_idxs = np.asarray([])
+                self.tips_in_codomain_idxs = np.asarray([])
+                self.tip_in_domain_and_codomain = np.asarray([])
+
 
     def _set_tipcorr(self, FillFrac, EltTip):
         """
@@ -691,6 +731,7 @@ class elasticity_matrix_toepliz(LinearOperator):
         self.enable_tip_corr = True
         # list of tip elem. IDs:
         self.EltTip = EltTip
+        self.FillFrac = FillFrac
         # build an array for all the elements in the mesh and fill it with the known values
         self.tipcorr = np.full(self.C_size_, np.nan)
         self.tipcorr[EltTip] = tip_correction_factors(FillFrac) * self.diag_val
