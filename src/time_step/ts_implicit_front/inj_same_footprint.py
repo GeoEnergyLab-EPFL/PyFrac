@@ -17,6 +17,7 @@ from fluid.reyNumb import turbulence_check_tip
 from systems.make_sys_common_fun import calculate_fluid_flow_characteristics_laminar
 from systems.sol_sys_dispatcher import solve_width_pressure
 from tip.volume_integral import leak_off_stagnant_tip
+from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 
 
 def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties, sim_properties,
@@ -41,6 +42,26 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     """
     log = logging.getLogger('PyFrac.injection_same_footprint')
+
+    if mat_properties.sizeDependentToughness[0]:
+        Kprime_tip = np.full((len(Fr_lstTmStp.EltTip, ),), (32 / np.pi) ** 0.5 *
+                             get_fracture_size_dependent_toughness(Fr_lstTmStp.Ffront, Fr_lstTmStp.EltTip,
+                                                                   Fr_lstTmStp.v, Fr_lstTmStp.mesh,
+                                                                   mat_properties.sizeDependentToughness))
+        log.debug("The current toughness is: " + str(Kprime_tip[0]))
+
+        mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
+                                                                             , float)
+        mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
+
+    elif mat_properties.velocityDependentToughness[0]:
+        Kprime_tip = np.full((len(Fr_lstTmStp.EltTip, ),), (32 / np.pi) ** 0.5 *
+                             get_fracture_velocity_dependent_toughness(Fr_lstTmStp.EltTip, Fr_lstTmStp.v,
+                                                                       mat_properties.velocityDependentToughness))
+
+        mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
+                                                                             , float)
+        mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
     if len(Fr_lstTmStp.InCrack[np.where(Fr_lstTmStp.InCrack == 1)]) > sim_properties.maxElementIn and \
             sim_properties.meshReductionPossible:
@@ -89,7 +110,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
 
     # set the Tip correction as Rider & Napier, 1985.
     # it can be shown that tip correction and R0 kernel are performing better than R4 kernel and this type of tip correction
-
+    #if hasattr(C,"_set_tipcorr"):
     C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip)
     C._set_kerneltype_as_R0()
     w_k, p_k, return_data = solve_width_pressure(Fr_lstTmStp, #Fr_lstTmStp
@@ -114,6 +135,7 @@ def injection_same_footprint(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  empty, #stagnant
                                                  doublefracturedictionary= doublefracturedictionary,
                                                  inj_same_footprint = True)
+    #if hasattr(C,"enable_tip_corr"):
     C.enable_tip_corr = False
     C._set_kerneltype_as_it_used_to_be()
 

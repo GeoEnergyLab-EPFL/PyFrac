@@ -21,9 +21,10 @@ from controller import Controller
 from fracture_obj.fracture_initialization import Geometry, InitializationParameters
 from utilities.utility import setup_logging_to_console
 from utilities.postprocess_fracture import load_fractures
+from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='info')
+setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
 Mesh = CartesianMesh(104, 63, 105, 85, symmetric=True)
@@ -78,6 +79,8 @@ gamma = (K1c_func(0.,0.,np.pi/2) / K1c_func(0.,0.,0.))**2    # gamma = (Kc1/Kc3)
 Fr_geometry = Geometry('elliptical', minor_axis=15., gamma=gamma)
 init_param = InitializationParameters(Fr_geometry, regime='E_K')
 
+C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
+
 # creating fracture object
 Fr = Fracture(Mesh,
               init_param,
@@ -91,7 +94,8 @@ controller = Controller(Fr,
                         Solid,
                         Fluid,
                         Injection,
-                        simulProp)
+                        simulProp,
+                        C=C)
 
 # run the simulation
 controller.run()
