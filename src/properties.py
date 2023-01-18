@@ -601,7 +601,7 @@ class SimulationProperties:
         self.maxElementIn = np.inf
         self.maxCellSize = np.inf
         self.meshReductionFactor = simul_param.mesh_reduction_factor
-        self.meshReductionPossible = True
+        self.meshReductionPossible = False
         self.limitAdancementTo2cells = simul_param.limit_Adancement_To_2_cells
         self.forceTmStpLmtANDLmtAdvTo2cells = simul_param.force_time_step_limit_and_max_adv_to_2_cells
         self.frontAdvancing = simul_param.front_advancing
