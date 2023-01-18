@@ -39,6 +39,7 @@ def convert_meshDict_to_mesh(fracture_list):
     from mesh_obj.mesh import CartesianMesh
     from fracture_obj.fracture import Fracture
 
+
     if isinstance(fracture_list, list):
         for num, fr in enumerate(fracture_list):
             if isinstance(fr.mesh, Dict):
@@ -55,7 +56,6 @@ def convert_meshDict_to_mesh(fracture_list):
                                                mesh_dict['nx'], mesh_dict['ny'])
 
 #-----------------------------------------------------------------------------------------------------------------------
-
 
 def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False,
                    load_all_meshes=True):
@@ -180,6 +180,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         distinct_mesh = fracture_list[0].mesh
 
     fracture_list[0].mesh = distinct_mesh
+    mesh_ind = 0
 
     #--- loop over the rest ---#
     for num, fr in enumerate(fracture_list):
@@ -190,16 +191,25 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                     intDict = copy.deepcopy(fr.mesh)
                     convert_meshDict_to_mesh(fr)
                     distinct_mesh = fr.mesh
+                    mesh_ind = num
+                else:
+                    fr.mesh = mesh_ind
 
             else:
                 if fr.mesh != distinct_mesh:
-                    distinct_mesh = fr.mesh
                     intDict = {'domain Limits' : fr.mesh.domainLimits,
                                'nx': fr.mesh.nx,
                                'ny': fr.mesh.ny}
+                    distinct_mesh = fr.mesh
+                    mesh_ind = num
+                else:
+                    fr.mesh = mesh_ind
 
-            fracture_list[num].mesh = distinct_mesh
-
+    # saving the reference to the proper mesh! (i am not making a copy of the mesh per se)
+    for i in range(len(fracture_list)):
+        fr_i= fracture_list[i]
+        if isinstance(fr_i.mesh, int):
+            fracture_list[i].mesh = fracture_list[fr_i.mesh].mesh
 
     return fracture_list, properties
 
@@ -249,11 +259,15 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs[i] = fracture_list[i].time
 
     elif variable == 'front velocity' or variable == 'v':
-        for i in range(len(fracture_list)):
-            vel = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
-            vel[fracture_list[i].EltTip] = fracture_list[i].v
-            variable_list[i] = vel
-            time_srs[i] = fracture_list[i].time
+        for i in fracture_list:
+            if isinstance(i.mesh, int):
+                fr_mesh = fracture_list[i.mesh].mesh
+            else:
+                fr_mesh = i.mesh
+            vel = np.full((fr_mesh.NumberOfElts, ), np.nan)
+            vel[i.EltTip] = i.v
+            variable_list.append(vel)
+            time_srs.append(i.time)
 
     elif variable == 'Reynolds number' or variable == 'Re':
         if fracture_list[-1].ReynoldsNumber is None:
@@ -268,7 +282,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list.append(np.mean(fracture_list[i].ReynoldsNumber, axis=0))
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid flux' or variable == 'ff':
         if fracture_list[-1].fluidFlux is None:
@@ -283,7 +301,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidFlux, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts,), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'fluid velocity' or variable == 'fv':
         if fracture_list[-1].fluidVelocity is None:
@@ -298,33 +320,42 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidVelocity, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'pressure gradient x' or variable == 'dpdx':
-        for i in range(len(fracture_list)):
-            dpdxLft = (fracture_list[i].pNet[fracture_list[i].EltCrack] -
-                       fracture_list[i].pNet[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 0]]) \
-                      * fracture_list[i].InCrack[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 0]]
-            dpdxRgt = (fracture_list[i].pNet[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 1]] -
-                       fracture_list[i].pNet[fracture_list[i].EltCrack]) \
-                      * fracture_list[i].InCrack[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 1]]
-            dpdx = np.full((fracture_list[i].mesh.NumberOfElts, ),0.0)
-            dpdx[fracture_list[i].EltCrack] = np.mean([dpdxLft, dpdxRgt], axis=0)
-            variable_list[i] = dpdx
-            time_srs[i] = fracture_list[i].time
+        for i in fracture_list:
+            # get the mesh (either stored there or retrieve from location)
+            if isinstance(i.mesh, int):
+                fr_mesh = fracture_list[i.mesh].mesh
+            else:
+                fr_mesh = i.mesh
+            dpdxLft = (i.pNet[i.EltCrack] - i.pNet[fr_mesh.NeiElements[i.EltCrack, 0]]) \
+                      * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 0]]
+            dpdxRgt = (i.pNet[fr_mesh.NeiElements[i.EltCrack, 1]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 1]]
+            dpdx = np.full((fr_mesh.NumberOfElts, ),0.0)
+            dpdx[i.EltCrack] = np.mean([dpdxLft, dpdxRgt], axis=0)
+            variable_list.append(dpdx)
+            time_srs.append(i.time)
 
     elif variable == 'pressure gradient y' or variable == 'dpdy':
-        for i in range(len(fracture_list)):
-            dpdyBtm = (fracture_list[i].pNet[fracture_list[i].EltCrack] -
-                       fracture_list[i].pNet[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 2]]) \
-                      * fracture_list[i].InCrack[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 2]]
-            dpdxtop = (fracture_list[i].pNet[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 3]] -
-                       fracture_list[i].pNet[fracture_list[i].EltCrack]) \
-                      * fracture_list[i].InCrack[fracture_list[i].mesh.NeiElements[fracture_list[i].EltCrack, 3]]
-            dpdy = np.full((fracture_list[i].mesh.NumberOfElts, ),0.0)
-            dpdy[fracture_list[i].EltCrack] = np.mean([dpdyBtm, dpdxtop], axis=0)
-            variable_list[i] = dpdy
-            time_srs[i] = fracture_list[i].time
+        for i in fracture_list:
+            if isinstance(i.mesh, int):
+                fr_mesh = fracture_list[i.mesh].mesh
+            else:
+                fr_mesh = i.mesh
+            dpdyBtm = (i.pNet[i.EltCrack] - i.pNet[fr_mesh.NeiElements[i.EltCrack, 2]]) \
+                      * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 2]]
+            dpdxtop = (i.pNet[fr_mesh.NeiElements[i.EltCrack, 3]] - i.pNet[i.EltCrack]) \
+                      * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 3]]
+            dpdy = np.full((fr_mesh.NumberOfElts, ),0.0)
+            dpdy[i.EltCrack] = np.mean([dpdyBtm, dpdxtop], axis=0)
+            variable_list.append(dpdy)
+            time_srs.append(i.time)
 
     elif variable == 'fluid flux as vector field' or variable == 'ffvf':
         if fracture_list[-1].fluidFlux_components is None:
@@ -339,7 +370,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = fracture_list[i].fluidFlux_components
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((i.mesh.NumberOfElts,), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
         if fracture_list[-1].fluidVelocity_components is None:
@@ -354,7 +389,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = fracture_list[i].fluidVelocity_components
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'effective viscosity' or variable == 'ev':
         if fracture_list[-1].effVisc is None:
@@ -369,8 +408,12 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].effVisc, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
-    
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
+
     elif variable == 'yielded' or variable == 'y':
         if fracture_list[-1].yieldRatio is None:
             raise SystemExit(err_var_not_saved)
@@ -384,12 +427,20 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].yieldRatio, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                variable_list[i] = np.full((fracture_list[i].mesh.NumberOfElts, ), np.nan)
+                if isinstance(i.mesh, int):
+                    fr_mesh = fracture_list[i.mesh].mesh
+                else:
+                    fr_mesh = i.mesh
+                variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in range(len(fracture_list)):
+            if isinstance(fracture_list[i].mesh, int):
+                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
+            else:
+                fr_mesh = fracture_list[i].mesh
             if len(fracture_list[i].source) != 0:
-                source_loc = fracture_list[i].mesh.CenterCoor[fracture_list[i].source[0]]
+                source_loc = fr_mesh.CenterCoor[fracture_list[i].source[0]]
             # coordinate of the zero vertex in the tip cells
             front_intersect_dist = np.sqrt((fracture_list[i].Ffront[::, [0, 2]].flatten() - source_loc[0]) ** 2
                                            + (fracture_list[i].Ffront[::, [1, 3]].flatten() - source_loc[1]) ** 2)
@@ -402,7 +453,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs[i] = fracture_list[i].time
     elif variable == 'mesh':
         for i in range(len(fracture_list)):
-            variable_list[i] = fracture_list[i].mesh
+            if isinstance(fracture_list[i].mesh, int):
+                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
+            else:
+                fr_mesh = fracture_list[i].mesh
+            variable_list[i] = fr_mesh
             time_srs[i] = fracture_list[i].time
 
     elif variable == 'efficiency' or variable == 'ef':
@@ -424,7 +479,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
         for i in range(len(fracture_list)):
             variable_list[i] = sum(fracture_list[i].LkOffTotal[fracture_list[i].EltCrack])
             time_srs[i] = fracture_list[i].time
-            
+
     elif variable == 'aspect ratio' or variable == 'ar':
         for i in range(len(fracture_list)):
             x_coords = np.hstack((fracture_list[i].Ffront[:, 0], fracture_list[i].Ffront[:, 2]))
@@ -435,11 +490,15 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs[i] = fracture_list[i].time
 
     elif variable == 'chi':
-        for i in range(len(fracture_list)):
-            vel = np.full((fracture_list[i].mesh.NumberOfElts,), np.nan)
-            vel[fracture_list[i].EltTip] = fracture_list[i].v
-            variable_list[i] = vel
-            time_srs[i] = fracture_list[i].time
+        for i in fracture_list:
+            if isinstance(i.mesh, int):
+                fr_mesh = fracture_list[i.mesh].mesh
+            else:
+                fr_mesh = i.mesh
+            vel = np.full((fr_mesh.NumberOfElts,), np.nan)
+            vel[i.EltTip] = i.v
+            variable_list.append(vel)
+            time_srs.append(i.time)
 
 
     elif variable == 'regime':
@@ -463,23 +522,23 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 raise ValueError("It seems that injection line is not solved. Injection line pressure is not available")
             else:
                 variable_list[i] = fr.pInjLine
-            time_srs[i]=fr.time
+            time_srs[i] = fr.time
 
     elif variable == 'injection rate' or variable == 'ir':
         for i, fr in enumerate(fracture_list):
             if fr.injectionRate is None:
                 raise ValueError("It seems that injection line is not solved. Injection rate is not available")
             else:
-                variable_list[i]=fr.injectionRate
-            time_srs[i]=fr.time
+                variable_list[i] = fr.injectionRate
+            time_srs[i] = fr.time
 
     elif variable == 'total injection rate' or variable == 'tir':
         for i, fr in enumerate(fracture_list):
             if fr.injectionRate is None:
                 raise ValueError("It seems that injection line is not solved. Injection rate is not available")
             else:
-                variable_list[i]=(np.sum(fr.injectionRate))
-            time_srs[i]=fr.time
+                variable_list[i] = (np.sum(fr.injectionRate))
+            time_srs[i] = fr.time
     else:
         raise ValueError('The variable type is not correct.')
 
@@ -540,6 +599,10 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                 else:
                     fr_mesh = fracture_list[i].mesh
                 try:
+                    fr_mesh.locate_element(point[0][0], point[0][1])[0]
+                except TypeError:
+                    value_point = [np.nan]
+                else:
                     ind = fr_mesh.locate_element(point[0][0], point[0][1])[0]
                     cellDiag = np.sqrt(fr_mesh.hx ** 2 + fr_mesh.hy ** 2)
                     xmin = (fr_mesh.CenterCoor[ind].flatten())[0] - 3 * cellDiag
@@ -548,13 +611,17 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
                     ymax = (fr_mesh.CenterCoor[ind].flatten())[1] + 3 * cellDiag
                     indBox = fr_mesh.get_cells_inside_box(xmin, xmax, ymin, ymax)
 
-                    value_point = griddata(fracture_list[i].mesh.CenterCoor[indBox],
+                    value_point = griddata(fr_mesh.CenterCoor[indBox],
                                            var_values[i][indBox],
                                            point,
                                            method='linear',
                                            fill_value=np.nan)
-                except:
-                    value_point = [np.nan]
+                # interpolate the neighbours of the element only
+                # value_point = griddata(fracture_list[i].mesh.CenterCoor,
+                #                        var_values[i],
+                #                        point,
+                #                        method='linear',
+                #                        fill_value=np.nan)
                 if np.isnan(value_point):
                     log.warning('Point outside fracture.')
 
@@ -1005,7 +1072,11 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
         return_list = var_values
     else:
         for i in range(len(fracture_list)):
-            value_point = griddata(fracture_list[i].mesh.CenterCoor,
+            if isinstance(fracture_list[i].mesh, int):
+                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
+            else:
+                fr_mesh = fracture_list[i].mesh
+            value_point = griddata(fr_mesh.CenterCoor,
                                    var_values[i],
                                    point,
                                    method='linear',
@@ -1232,97 +1303,107 @@ def get_front_intercepts(fr_list, point):
     intercepts = []
 
     for fr in fr_list:
-        intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
-        pnt_cell = fr.mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
-        if pnt_cell not in fr.EltChannel:
-            log.warning("Point is not inside fracture!")
+        if isinstance(fr.mesh, int):
+            fr_mesh = fr_list[fr.mesh].mesh
         else:
-            pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
-            cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord
-            tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)             # the tip cells with the same y coord
-
-            # the code bellow remove the tip cells which are directly at right and left of the cell containing the point
-            # but have the front line partially passing through them. For them, the horizontal line drawn from the given
-            # point will pass through the cell but not from the front line.
-            if len(tipCells_x_axis) > 2:
-                invalid_cell = np.full(len(tipCells_x_axis), True, dtype=bool)
-                for indx, cell in enumerate(tipCells_x_axis):
-                    in_tip_cells = np.where(fr.EltTip == cell)[0]
-                    if (point[1] > fr.Ffront[in_tip_cells, 1] and point[1] <= fr.Ffront[in_tip_cells, 3]) or (
-                            point[1] < fr.Ffront[in_tip_cells, 1] and point[1] >= fr.Ffront[in_tip_cells, 3]):
-                        invalid_cell[indx] = False
-                tipCells_x_axis = np.delete(tipCells_x_axis, np.where(invalid_cell)[0])
-
-            # find out the left and right cells
-            if len(tipCells_x_axis) == 2:
-                if fr.mesh.CenterCoor[tipCells_x_axis[0], 0] < point[0]:
-                    lft_cell = tipCells_x_axis[0]
-                    rgt_cell = tipCells_x_axis[1]
-                else:
-                    lft_cell = tipCells_x_axis[1]
-                    rgt_cell = tipCells_x_axis[0]
+            fr_mesh = fr.mesh
+        intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
+        try:
+            pnt_cell = fr_mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
+        except TypeError:
+            log.warning("Point is not inside Domain!")
+            intercepts.append([0, 0, 0, 0])
+        else:
+            if pnt_cell not in fr.EltChannel:
+                log.warning("Point is not inside fracture!")
+                intercepts.append([0, 0, 0, 0])
             else:
-                lft_cell = np.nan
-                rgt_cell = np.nan
+                pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]            # the y coordinate of the cell
+                cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0]    # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)             # the tip cells with the same y coord
 
-            pnt_cell_x = fr.mesh.CenterCoor[pnt_cell, 0]
-            cells_y_axis = np.where(fr.mesh.CenterCoor[:, 0] == pnt_cell_x)[0]
-            tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)
+                # the code bellow remove the tip cells which are directly at right and left of the cell containing the point
+                # but have the front line partially passing through them. For them, the horizontal line drawn from the given
+                # point will pass through the cell but not from the front line.
+                if len(tipCells_x_axis) > 2:
+                    invalid_cell = np.full(len(tipCells_x_axis), True, dtype=bool)
+                    for indx, cell in enumerate(tipCells_x_axis):
+                        in_tip_cells = np.where(fr.EltTip == cell)[0]
+                        if (point[1] > fr.Ffront[in_tip_cells, 1] and point[1] <= fr.Ffront[in_tip_cells, 3]) or (
+                                point[1] < fr.Ffront[in_tip_cells, 1] and point[1] >= fr.Ffront[in_tip_cells, 3]):
+                            invalid_cell[indx] = False
+                    tipCells_x_axis = np.delete(tipCells_x_axis, np.where(invalid_cell)[0])
 
-            # the code bellow remove the tip cells which are directly at top and bottom of the cell containing the point
-            # but have the front line partially passing through them. For them, the vertical line drawn from the given
-            # point will pass through the cell but not from the front line.
-            if len(tipCells_y_axis) > 2:
-                invalid_cell = np.full(len(tipCells_y_axis), True, dtype=bool)
-                for indx, cell in enumerate(tipCells_y_axis):
-                    in_tip_cells = np.where(fr.EltTip == cell)[0]
-                    if (point[0] > fr.Ffront[in_tip_cells, 0] and point[0] <= fr.Ffront[in_tip_cells, 2]) or (
-                            point[0] < fr.Ffront[in_tip_cells, 0] and point[0] >= fr.Ffront[in_tip_cells, 2]):
-                        invalid_cell[indx] = False
-                tipCells_y_axis = np.delete(tipCells_y_axis, np.where(invalid_cell)[0])
-
-            if len(tipCells_y_axis) == 2:
-                if fr.mesh.CenterCoor[tipCells_y_axis[0], 1] < point[1]:
-                    btm_cell = tipCells_y_axis[0]
-                    top_cell = tipCells_y_axis[1]
+                # find out the left and right cells
+                if len(tipCells_x_axis) == 2:
+                    if fr_mesh.CenterCoor[tipCells_x_axis[0], 0] < point[0]:
+                        lft_cell = tipCells_x_axis[0]
+                        rgt_cell = tipCells_x_axis[1]
+                    else:
+                        lft_cell = tipCells_x_axis[1]
+                        rgt_cell = tipCells_x_axis[0]
                 else:
-                    btm_cell = tipCells_y_axis[1]
-                    top_cell = tipCells_y_axis[0]
-            else:
-                btm_cell = np.nan
-                top_cell = np.nan
+                    lft_cell = np.nan
+                    rgt_cell = np.nan
 
-            top_in_tip = np.where(fr.EltTip == top_cell)[0]
-            btm_in_tip = np.where(fr.EltTip == btm_cell)[0]
-            lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
-            rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+                pnt_cell_x = fr_mesh.CenterCoor[pnt_cell, 0]
+                cells_y_axis = np.where(fr_mesh.CenterCoor[:, 0] == pnt_cell_x)[0]
+                tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)
 
-            # find the intersection using the equations of the front lines in the tip cells
-            if top_in_tip.size > 0:
-                intrcp_top = fr.Ffront[top_in_tip, 3] + \
-                         (fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) / (
-                                     fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * \
-                         (point[0] - fr.Ffront[top_in_tip, 2])
+                # the code bellow remove the tip cells which are directly at top and bottom of the cell containing the point
+                # but have the front line partially passing through them. For them, the vertical line drawn from the given
+                # point will pass through the cell but not from the front line.
+                if len(tipCells_y_axis) > 2:
+                    invalid_cell = np.full(len(tipCells_y_axis), True, dtype=bool)
+                    for indx, cell in enumerate(tipCells_y_axis):
+                        in_tip_cells = np.where(fr.EltTip == cell)[0]
+                        if (point[0] > fr.Ffront[in_tip_cells, 0] and point[0] <= fr.Ffront[in_tip_cells, 2]) or (
+                                point[0] < fr.Ffront[in_tip_cells, 0] and point[0] >= fr.Ffront[in_tip_cells, 2]):
+                            invalid_cell[indx] = False
+                    tipCells_y_axis = np.delete(tipCells_y_axis, np.where(invalid_cell)[0])
 
-            if btm_in_tip.size > 0:
-                intrcp_btm = fr.Ffront[btm_in_tip, 3] + \
-                         (fr.Ffront[btm_in_tip, 3] - fr.Ffront[btm_in_tip, 1]) / (
-                                     fr.Ffront[btm_in_tip, 2] - fr.Ffront[btm_in_tip, 0]) * \
-                         (point[0] - fr.Ffront[btm_in_tip, 2])
+                if len(tipCells_y_axis) == 2:
+                    if fr_mesh.CenterCoor[tipCells_y_axis[0], 1] < point[1]:
+                        btm_cell = tipCells_y_axis[0]
+                        top_cell = tipCells_y_axis[1]
+                    else:
+                        btm_cell = tipCells_y_axis[1]
+                        top_cell = tipCells_y_axis[0]
+                else:
+                    btm_cell = np.nan
+                    top_cell = np.nan
 
-            if lft_in_tip.size > 0:
-                intrcp_lft = (point[1] - fr.Ffront[lft_in_tip, 3]) / \
-                         (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
-                                     fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
-                         fr.Ffront[lft_in_tip, 2]
+                top_in_tip = np.where(fr.EltTip == top_cell)[0]
+                btm_in_tip = np.where(fr.EltTip == btm_cell)[0]
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
 
-            if rgt_in_tip.size > 0:
-                intrcp_rgt = (point[1] - fr.Ffront[rgt_in_tip, 3]) / \
-                         (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
-                                     fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
-                         fr.Ffront[rgt_in_tip, 2]
+                # find the intersection using the equations of the front lines in the tip cells
+                if top_in_tip.size > 0:
+                    intrcp_top = fr.Ffront[top_in_tip, 3] + \
+                             (fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) / (
+                                         fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * \
+                             (point[0] - fr.Ffront[top_in_tip, 2])
 
-        intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
+                if btm_in_tip.size > 0:
+                    intrcp_btm = fr.Ffront[btm_in_tip, 3] + \
+                             (fr.Ffront[btm_in_tip, 3] - fr.Ffront[btm_in_tip, 1]) / (
+                                         fr.Ffront[btm_in_tip, 2] - fr.Ffront[btm_in_tip, 0]) * \
+                             (point[0] - fr.Ffront[btm_in_tip, 2])
+
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (point[1] - fr.Ffront[lft_in_tip, 3]) / \
+                             (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                             fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (point[1] - fr.Ffront[rgt_in_tip, 3]) / \
+                             (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                             fr.Ffront[rgt_in_tip, 2]
+
+            intercepts.append([intrcp_top[0], intrcp_btm[0], intrcp_lft[0], intrcp_rgt[0]])
 
     return intercepts
 
@@ -1396,8 +1477,14 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
     iter = 0
 
     for jk in fr_list:
+        # get the mesh (either stored there or retrieve from location)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
+
         if len(jk.source) != 0:
-            left, right = get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[1:]
+            left, right = get_Ffront_as_vector(jk, fr_mesh.CenterCoor[jk.source[0], ::])[1:]
         else:
             left, right = get_Ffront_as_vector(jk, [0., 0.])[1:]
 
@@ -1590,6 +1677,89 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+# This is the function to get the breadth
+def get_local_geometry(Fr_list, points):
+
+    breadth = np.empty((len(Fr_list),len(points)))
+    breadth[:] = np.nan
+    height = np.empty((len(Fr_list),len(points)))
+    height[:] = np.nan
+    for p in range(len(points)):
+        for Fr in range(len(Fr_list)):
+            # get the mesh (either stored there or retrieve from location)
+            if isinstance(Fr_list[Fr].mesh, int):
+                fr_mesh = Fr_list[Fr_list[Fr].mesh].mesh
+            else:
+                fr_mesh = Fr_list[Fr].mesh
+            fr = Fr_list[Fr]
+            intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
+            pnt_cell = fr_mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
+            if pnt_cell not in fr.EltChannel:
+                print("Point is not inside fracture!")
+            else:
+                pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
+                cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0]  # all the cells with the same y coord
+                tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)  # the tip cells with the same y coord
+
+                pnt_cell_x = fr_mesh.CenterCoor[pnt_cell, 0]  # the x coordinate of the cell
+                cells_y_axis = np.where(fr_mesh.CenterCoor[:, 0] == pnt_cell_x)[0]  # all the cells with the same y coord
+                tipCells_y_axis = np.intersect1d(fr.EltTip, cells_y_axis)  # the tip cells with the same y coord
+
+                # find out the left and right cells
+                cells_left = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] < fr_mesh.CenterCoor[pnt_cell, 0]]
+                cells_right = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] > fr_mesh.CenterCoor[pnt_cell, 0]]
+                lft_cell = cells_left[abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]))]
+                rgt_cell = cells_right[abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]))]
+
+                lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
+                rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
+
+                # find out the top and bottom cells
+                cells_top = tipCells_y_axis[fr_mesh.CenterCoor[tipCells_y_axis, 1] < fr_mesh.CenterCoor[pnt_cell, 1]]
+                cells_bottom = tipCells_y_axis[fr_mesh.CenterCoor[tipCells_y_axis, 1] > fr_mesh.CenterCoor[pnt_cell, 1]]
+                top_cell = cells_top[abs(fr_mesh.CenterCoor[cells_top, 1] - fr_mesh.CenterCoor[pnt_cell, 1]) ==
+                                      min(abs(fr_mesh.CenterCoor[cells_top, 1] - fr_mesh.CenterCoor[pnt_cell, 1]))]
+                bot_cell = cells_bottom[abs(fr_mesh.CenterCoor[pnt_cell, 1] - fr_mesh.CenterCoor[cells_bottom, 1]) ==
+                                      min(abs(fr_mesh.CenterCoor[pnt_cell, 1] - fr_mesh.CenterCoor[cells_bottom, 1]))]
+
+                top_in_tip = np.where(fr.EltTip == top_cell)[0]
+                bot_in_tip = np.where(fr.EltTip == bot_cell)[0]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if lft_in_tip.size > 0:
+                    intrcp_lft = (points[p][1] - fr.Ffront[lft_in_tip, 3]) / \
+                                 (fr.Ffront[lft_in_tip, 3] - fr.Ffront[lft_in_tip, 1]) * (
+                                         fr.Ffront[lft_in_tip, 2] - fr.Ffront[lft_in_tip, 0]) + \
+                                 fr.Ffront[lft_in_tip, 2]
+
+                if rgt_in_tip.size > 0:
+                    intrcp_rgt = (points[p][1] - fr.Ffront[rgt_in_tip, 3]) / \
+                                 (fr.Ffront[rgt_in_tip, 3] - fr.Ffront[rgt_in_tip, 1]) * (
+                                         fr.Ffront[rgt_in_tip, 2] - fr.Ffront[rgt_in_tip, 0]) + \
+                                 fr.Ffront[rgt_in_tip, 2]
+
+                # find the intersection using the equations of the front lines in the tip cells
+                if top_in_tip.size > 0:
+                    intrcp_top = (points[p][0] - fr.Ffront[top_in_tip, 2]) / \
+                                 (fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * (
+                                         fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) + \
+                                 fr.Ffront[top_in_tip, 3]
+
+                if bot_in_tip.size > 0:
+                    intrcp_bot = (points[p][0] - fr.Ffront[top_in_tip, 2]) / \
+                                 (fr.Ffront[top_in_tip, 2] - fr.Ffront[top_in_tip, 0]) * (
+                                         fr.Ffront[top_in_tip, 3] - fr.Ffront[top_in_tip, 1]) + \
+                                 fr.Ffront[top_in_tip, 3]
+
+                breadth[Fr, p] = intrcp_rgt[0]-intrcp_lft[0]
+                height[Fr, p] = intrcp_top[0]-intrcp_bot[0]
+
+    return breadth, height
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 def get_fracture_head_volume(fr_list, geometric_data=None):
     # get the geometric data if necessary
     if geometric_data == None:
@@ -1600,12 +1770,17 @@ def get_fracture_head_volume(fr_list, geometric_data=None):
     #loop over time steps to get the volume
     iter = 0
     for jk in fr_list:
+        # get the mesh (either stored there or retrieve from location)
+        if isinstance(jk.mesh, int):
+            fr_mesh = fr_list[jk.mesh].mesh
+        else:
+            fr_mesh = jk.mesh
         z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
-        el_head_tip = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
-        el_head_channel = np.asarray(np.where(jk.mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
+        el_head_tip = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
+        el_head_channel = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
         v_head[iter] = (np.sum(jk.w[jk.EltChannel[el_head_channel]]) + np.sum(jk.w[jk.EltTip[el_head_tip]] *
-                                                                              jk.FillF[el_head_tip])) * jk.mesh.EltArea
-        v_tot[iter] = jk.mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
+                                                                              jk.FillF[el_head_tip])) * fr_mesh.EltArea
+        v_tot[iter] = fr_mesh.EltArea * (np.sum(jk.w[jk.EltTip]*jk.FillF) + np.sum(jk.w[jk.EltChannel]))
         iter += 1
     return v_tot.flatten(), v_head.flatten()
 
@@ -1625,26 +1800,30 @@ def get_breadth_at_point(Fr_list, points):
     Az = init_list_of_objects(len(Fr_list))
     for p in range(len(points)):
         for Fr in range(len(Fr_list)):
+            if isinstance(fr.mesh, int):
+                fr_mesh = Fr_list[fr.mesh].mesh
+            else:
+                fr_mesh = fr.mesh
             if p == 0:
                 breadth[Fr] = len(points) * [0.]
                 Az[Fr] = len(points) * [0.]
             fr = Fr_list[Fr]
             intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
-            pnt_cell = fr.mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
+            pnt_cell = fr_mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
             if pnt_cell not in fr.EltChannel:
                 log.warning("Point is not inside fracture!")
             else:
-                pnt_cell_y = fr.mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
-                cells_x_axis = np.where(fr.mesh.CenterCoor[:, 1] == pnt_cell_y)[0] # all the cells with the same y coord
+                pnt_cell_y = fr_mesh.CenterCoor[pnt_cell, 1]  # the y coordinate of the cell
+                cells_x_axis = np.where(fr_mesh.CenterCoor[:, 1] == pnt_cell_y)[0] # all the cells with the same y coord
                 tipCells_x_axis = np.intersect1d(fr.EltTip, cells_x_axis)  # the tip cells with the same y coord
 
                 # find out the left and right cells
-                cells_left = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] < fr.mesh.CenterCoor[pnt_cell, 0]]
-                cells_right = tipCells_x_axis[fr.mesh.CenterCoor[tipCells_x_axis, 0] > fr.mesh.CenterCoor[pnt_cell, 0]]
-                lft_cell = cells_left[abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]) ==
-                                      min(abs(fr.mesh.CenterCoor[cells_left, 0] - fr.mesh.CenterCoor[pnt_cell, 0]))]
-                rgt_cell = cells_right[abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]) ==
-                                      min(abs(fr.mesh.CenterCoor[pnt_cell, 0] - fr.mesh.CenterCoor[cells_right, 0]))]
+                cells_left = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] < fr_mesh.CenterCoor[pnt_cell, 0]]
+                cells_right = tipCells_x_axis[fr_mesh.CenterCoor[tipCells_x_axis, 0] > fr_mesh.CenterCoor[pnt_cell, 0]]
+                lft_cell = cells_left[abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[cells_left, 0] - fr_mesh.CenterCoor[pnt_cell, 0]))]
+                rgt_cell = cells_right[abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]) ==
+                                      min(abs(fr_mesh.CenterCoor[pnt_cell, 0] - fr_mesh.CenterCoor[cells_right, 0]))]
 
                 lft_in_tip = np.where(fr.EltTip == lft_cell)[0]
                 rgt_in_tip = np.where(fr.EltTip == rgt_cell)[0]
@@ -1664,7 +1843,7 @@ def get_breadth_at_point(Fr_list, points):
 
                 breadth[Fr][p] = intrcp_rgt[0]-intrcp_lft[0]
 
-                Az[Fr][p] = np.sum(fr.w[cells_x_axis]) * fr.mesh.hx
+                Az[Fr][p] = np.sum(fr.w[cells_x_axis]) * fr_mesh.hx
 
     return breadth, Az
 
@@ -1713,10 +1892,15 @@ def get_fracture_fp(fr_list):
     iter = 0
 
     for jk in fr_list:
-        if len(jk.source) != 0:
-            fp_list.append(get_Ffront_as_vector(jk, jk.mesh.CenterCoor[jk.source[0], ::])[0])
+        fr = copy.deepcopy(jk)
+        if isinstance(jk.mesh, int):
+            fr.mesh = fr_list[jk.mesh].mesh
         else:
-            fp_list.append(get_Ffront_as_vector(jk, [0., 0])[0])
+            fr.mesh = jk.mesh
+        if len(jk.source) != 0:
+            fp_list.append(get_Ffront_as_vector(fr, fr.mesh.CenterCoor[jk.source[0], ::])[0])
+        else:
+            fp_list.append(get_Ffront_as_vector(fr, [0., 0])[0])
         iter = iter + 1
 
     return fp_list
@@ -1735,6 +1919,10 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
     fluid_vel_list = []
     time_srs = []
     for i in Fr_list:
+        if isinstance(i.mesh, int):
+            fr_mesh = Fr_list[i.mesh].mesh
+        else:
+            fr_mesh = i.mesh
 
         fluid_flux, \
         fluid_vel, \
@@ -1743,7 +1931,7 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
         fluid_vel_components = calculate_fluid_flow_characteristics_laminar(i.w,
                                                                             i.pNet,
                                                                             Solid.SigmaO,
-                                                                            i.mesh,
+                                                                            fr_mesh,
                                                                             i.EltCrack,
                                                                             i.InCrack,
                                                                             Fluid.muPrime,
@@ -1807,14 +1995,18 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direct
     list_of_fluid_vel_lists = []
 
     for i in range(nOFtimes): #each fr has its own mesh
+        if isinstance(Fr_list[i], int):
+            fr_mesh = Fr_list[Fr_list[i]].mesh
+        else:
+            fr_mesh = Fr_list[i].mesh
         # 1) get the coordinates of the points in the slices
-        vector_to_be_lost = np.zeros(Fr_list[i].mesh.NumberOfElts,dtype=np.int)
+        vector_to_be_lost = np.zeros(fr_mesh.NumberOfElts,dtype=np.int)
         NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
-                                                                                                            Fr_list[i].mesh,
+                                                                                                            fr_mesh,
                                                                                                             point = initial_point,
                                                                                                             orientation = orientation)
-        hx = Fr_list[i].mesh.hx # element horizontal size
-        hy = Fr_list[i].mesh.hy # element vertical size
+        hx = fr_mesh.hx # element horizontal size
+        hy = fr_mesh.hy # element vertical size
         # get the coordinates along the slice where you are getting the values
         if vel_direction ==  'ux' and orientation == 'horizontal': # take ux on the vertical edges
             indx1 = 0 #left
@@ -1848,9 +2040,9 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direct
         EltCrack_i = Fr_list[i].EltCrack
         fluid_vel_list_i = fluid_vel_list[i]
 
-        vector_to_be_lost1 = np.zeros(Fr_list[i].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost1 = np.zeros(fr_mesh.NumberOfElts, dtype=np.float)
         vector_to_be_lost1[EltCrack_i] = fluid_vel_list_i[indx1,:]
-        vector_to_be_lost2 = np.zeros(Fr_list[i].mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost2 = np.zeros(fr_mesh.NumberOfElts, dtype=np.float)
         vector_to_be_lost2[EltCrack_i] = fluid_vel_list_i[indx2,:]
 
         fluid_vel_list_final_i = [None] * (len(vector_to_be_lost1[sampling_cells]) + len(vector_to_be_lost2[sampling_cells]))

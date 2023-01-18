@@ -125,12 +125,16 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
     max_Lx = 0.
     max_Ly = 0.
     for i in fracture_list:
-        if i.mesh.Lx > max_Lx:
-            largest_mesh = i.mesh
-            max_Lx = i.mesh.Lx
-        if i.mesh.Ly > max_Ly:
-            largest_mesh = i.mesh
-            max_Ly = i.mesh.Ly
+        if isinstance(i.mesh, int):
+            mesh = fracture_list[i.mesh].mesh
+        else:
+            mesh = i.mesh
+        if mesh.Lx > max_Lx:
+            largest_mesh = mesh
+            max_Lx = mesh.Lx
+        if mesh.Ly > max_Ly:
+            largest_mesh = mesh
+            max_Ly = mesh.Ly
 
     if variable == 'mesh':
         if backGround_param is not None and mat_properties is None:
