@@ -10,6 +10,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 # external imports
 import numpy as np
 from numba import prange, njit
+from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+
 
 @njit(parallel=True, cache = True, nogil=True, fastmath=True)
 def tip_correction_factors(FillFrac):
@@ -83,3 +85,28 @@ def tip_correction_(C_Crack, EltCrack, EltTip, FillFrac):
     C_Crack[EltTip_positions, EltTip_positions] = C_Crack[EltTip_positions, EltTip_positions] * (1. + ac * coeff)
 
     return C_Crack
+
+
+
+def full_C_and_tip_correction_for_test(Mesh, Ep, EltTip, FillFrac):
+    """
+    This function is used to apply the <<filling fraction tip correction>> according to:
+    Rider & Napier, 1985, Error Analysis and Design of Large-Scale Tabular Mining Stress Analyser.
+
+    :return: corrected matrix ready for the dot product
+
+    """
+    C = load_isotropic_elasticity_matrix(Mesh, Ep, C_precision=np.float64)
+
+    coeff = np.pi / 4.
+
+    #EltTip_positions = np.where(np.in1d(EltCrack, EltTip))[0]
+
+    # filling fraction correction for element in the tip region
+    r = FillFrac - .25
+    indx = np.where(np.less(r, 0.1))[0]
+    r[indx] = 0.1
+    ac = (1 - r) / r
+    C[EltTip, EltTip] = C[EltTip, EltTip] * (1. + ac * coeff)
+
+    return C

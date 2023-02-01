@@ -1656,15 +1656,22 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
                  - sparse.diags([np.full((n_ch,), fluid_prop.compressibility * wcNplusHalf[to_solve])], [0],
                                 format='csr')
 
-    A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C[np.ix_(to_solve, to_solve)])
+    # from solid.elasticity_tip_correction import full_C_and_tip_correction_for_test
+    #
+    # CC = full_C_and_tip_correction_for_test(args[0][5].mesh, C.Ep, C.EltTip, C.FillFrac)
+    C_to_solve_to_solve = C[np.ix_(to_solve, to_solve)]
+
+    A[np.ix_(ch_indxs, ch_indxs)] = - ch_AplusCf.dot(C_to_solve_to_solve)
     A[ch_indxs, ch_indxs] += np.ones(len(ch_indxs), dtype=np.float64)
 
     A[np.ix_(ch_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(ch_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[ch_indxs, :].tocsc()[:, act_indxs]).toarray()
     A[ch_indxs[inj_in_ch], inj_ch_indx] -= dt / frac.mesh.EltArea * np.ones(len(inj_ch_indx), dtype=np.float64)
 
+
+
     A[np.ix_(tip_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
+                                        ).dot(C_to_solve_to_solve)
     A[np.ix_(tip_indxs, tip_indxs)] = (- dt * FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, tip_indxs] +
                                        sparse.diags(
                                            [np.full((n_tip,), fluid_prop.compressibility * wcNplusHalf[to_impose])],
@@ -1672,7 +1679,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
     A[np.ix_(tip_indxs, act_indxs)] = -dt * (FinDiffOprtr.tocsr()[tip_indxs, :].tocsc()[:, act_indxs]).toarray()
 
     A[np.ix_(act_indxs, ch_indxs)] = - (dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]
-                                        ).dot(C[np.ix_(to_solve, to_solve)])
+                                        ).dot(C_to_solve_to_solve)
     A[np.ix_(act_indxs, tip_indxs)] = -dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).toarray()
     A[np.ix_(act_indxs, act_indxs)] = (- dt * FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs] +
                                        sparse.diags(
@@ -1693,7 +1700,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
     A[inj_act_indx, inj_act_indx] = -inj_prop.perforationFriction * abs(solk[inj_act_indx])
 
     S = np.zeros((n_total,), dtype=np.float64)
-    pf_ch_prime = np.dot(C[np.ix_(to_solve, to_solve)], frac.w[to_solve]) + \
+    pf_ch_prime = np.dot(C_to_solve_to_solve, frac.w[to_solve]) + \
                   np.dot(C[np.ix_(to_solve, to_impose)], imposed_val) + \
                   np.dot(C[np.ix_(to_solve, active)], wNplusOne[active]) + \
                   mat_prop.SigmaO[to_solve]

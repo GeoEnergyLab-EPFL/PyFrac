@@ -594,7 +594,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
     else:
          doublefracturedictionary = {"number_of_fronts":fronts_dictionary['number_of_fronts']}
 
-    C._set_tipcorr(Fr_lstTmStp.FillF, Fr_lstTmStp.EltTip)
+
+    C._set_tipcorr(FillFrac_k, EltsTipNew)
     C._set_kerneltype_as_R0()
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(Fr_lstTmStp,
                                                        sim_properties,
@@ -617,6 +618,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                        corr_ribbon,
                                                        stagnant,
                                                        doublefracturedictionary = doublefracturedictionary)
+
     C.enable_tip_corr = False
     C._set_kerneltype_as_it_used_to_be()
 

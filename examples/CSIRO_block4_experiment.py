@@ -30,13 +30,22 @@ This files reproduces the "block 4 experiment" published in https://doi.org/10.1
 
 class custom_factory():
     def __init__(self, xlabel, ylabel):
+        self.number_of_plots = 1
         self.data = {'xlabel' : xlabel,
                      'ylabel': ylabel,
                      'xdata': [],
                      'p_in_crack': [],
                      'p_in_line': []} # max value of x that can be reached during the simulation
 
-    def custom_plot(self, sim_prop, fig=None):
+    def custom_plot(self, plot_index, sim_prop, fig=None):
+        if plot_index-1 not in range(self.number_of_plots):
+            print(f"check the variable number_of_plots in the custom class! \n you asked plot {plot_index} but declared number_of_plots={self.number_of_plots}")
+        if plot_index == 1:
+            return self.plot_1(sim_prop, fig=fig)
+        else:
+            print(f" you did not code the plot function in the custom class ")
+
+    def plot_1(self, sim_prop, fig=None):
         # this method is mandatory
         if fig is None:
             fig = plt.figure()
@@ -64,7 +73,7 @@ class custom_factory():
 
 
 run = True
-restart = False
+restart = True
 if run:
     # creating mesh
     Mesh = CartesianMesh(0.003, 0.003, 41, 41)
@@ -107,10 +116,10 @@ if run:
     simulProp = SimulationProperties()
     simulProp.customPlotsOnTheFly = True
     simulProp.finalTime = 600                               # the time at which the simulation stops
-    #simulProp.plotTSJump = 10                               # save and plot after every 5 time steps
+    simulProp.plotTSJump = 10                               # save and plot after every 5 time steps
     simulProp.set_outputFolder("./Data/injection_line")     # the disk address where the files are saved
     simulProp.custom = custom_factory('time [s]', 'pressure [MPa]')
-    simulProp.plotVar = ['ir', 'w', 'custom']
+    simulProp.plotVar = ['ir', 'pf', 'custom']
     #simulProp.plotVar = [ 'w', 'pf']
     simulProp.plotFigure = True
     simulProp.frontAdvancing = 'implicit'
