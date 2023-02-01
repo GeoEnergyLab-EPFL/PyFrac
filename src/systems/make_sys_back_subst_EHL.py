@@ -148,7 +148,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(pf_ch_prime) + \
                    fluid_prop.compressibility * wcNplusHalf[active] * frac.pFluid[active] + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
@@ -336,7 +336,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea+ \
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea+ \
                    - dt * (FinDiffOprtr.tocsr()[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
@@ -744,7 +744,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
                    dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                    dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea+ \
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea+ \
                    - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
     # --- OMITTED AT THE MOMENT ---
@@ -921,7 +921,7 @@ class EHL_sys_obj(LinearOperator):
                      dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, tip_indxs]).dot(frac.pFluid[to_impose]) + \
                      dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, act_indxs]).dot(frac.pFluid[active]) + \
                      dt * G[active] + \
-                     dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea + \
+                     dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea + \
                      - dt * (FinDiffOprtr[act_indxs, :].tocsc()[:, ch_indxs]).dot(delta_tb[to_solve])
 
 
@@ -1176,7 +1176,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], pf_ch_prime) + \
                    fluid_prop.compressibility * wcNplusHalf[active] * frac.pFluid[active] + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea
 
     # In the case of HB fluid, there can be tip or active constraint cells with no flux going in and out, making
     # the matrix singular. These pressure in these cells is not solved but is obtained from elasticity relaton.
@@ -1352,7 +1352,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, tip_indxs)], frac.pFluid[to_impose]) + \
                    dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, act_indxs)], frac.pFluid[active]) + \
                    dt * G[active] + \
-                   dt * Q[active] / frac.mesh.EltArea - 0.*LeakOff[active] / frac.mesh.EltArea + \
+                   dt * Q[active] / frac.mesh.EltArea - LeakOff[active] / frac.mesh.EltArea + \
                    - dt * np.dot(FinDiffOprtr[np.ix_(act_indxs, ch_indxs)], delta_tb[to_solve])
 
 
