@@ -217,7 +217,7 @@ def f(K, Cb, Con):
     elif Cb == 0 and K == 0:
         return 1 / (3 * Con)
     elif Cb == 0:
-        return 1 / (3 * Con) * ( 1 - K ** 3)
+        return 1 / (3 * Con) * (1 - K ** 3)
     else:
         return 1 / (3 * Con) * (
             1 - K ** 3 - 3 * Cb * (1 - K ** 2) / 2 + 3 * Cb ** 2 * (1 - K) - 3 * Cb ** 3 * np.log((Cb + 1) / (Cb + K)))
@@ -240,9 +240,14 @@ def TipAsym_Universal_1stOrder_Res(dist, *args):
         Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * wEltRibbon)
         sh = fluidProp.muPrime * Vel * dist ** 2 / (Eprime * wEltRibbon ** 3)
 
-        g0 = f(Kh, cnst_mc * Ch, cnst_m)
-        delt = cnst_m * (1 + cnst_mc * Ch) * g0
-        gdelt = f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
+        # Note: Kh > 1 means that the fracture does not propagate. The 1st order correction is based on a correction
+        #       to the toughness solution. Hence there is no correction to apply in this case which makes gdelt = 0.
+        if Kh >= 1.0:
+            gdelt = 0.
+        else:
+            g0 = f(Kh, cnst_mc * Ch, cnst_m)
+            delt = cnst_m * (1 + cnst_mc * Ch) * g0
+            gdelt = f(Kh, Ch * C2(delt) / C1(delt), C1(delt))
 
         return sh - gdelt
     else:
@@ -529,11 +534,11 @@ def bisection_Kjump_finder(a, b, Kprime, i, mesh):
     # remember b > a
     K_a = Kprime.of(a, index=i, mesh=mesh)
     K_b = Kprime.of(b, index=i, mesh=mesh)
-    delta_K_delta_s = (K_a - K_b) / np.abs(b-a)
+    delta_K_delta_s =  delta_K_delta_s_new = (K_a - K_b) / np.abs(b-a)
     if delta_K_delta_s != 0.:
         a_new = a
         b_new = b
-        dist_th = 1.e-6  # hard threshold
+        dist_th = mesh.hx/1.e-6  # hard threshold
         dist = b - a
 
         while dist > dist_th:
@@ -559,10 +564,10 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
     """
     log = logging.getLogger('PyFrac.FindBracket_dist_K_heterog')
     initial_prefactor = 8
-    maxprop = initial_prefactor  * mesh.cellDiag
+    maxprop = initial_prefactor * mesh.cellDiag
 
     if fluidProp.rheology == "Newtonian":
-        a = -DistLstTS
+        a = -DistLstTS * (1 + 5e3 * np.finfo(float).eps) # Small correction to make sure the distance is never 0!
         b = np.zeros(a.size)
         for i in range(0, len(w)):
             ai = a[i]
@@ -575,31 +580,42 @@ def FindBracket_dist_K_heterog(w, Kprime, Eprime, fluidProp, Cprime, DistLstTS, 
             # Res(a) < 0  && Res(b) > 0
             test_Res_grid1D = Res_grid1D > 0.
             if np.sum(test_Res_grid1D) == 0:
-                log.debug("The front is advancing more than 8 cell diagonals --> trying to allow that")
-                # from utility import plot_as_matrix
-                # K = np.zeros((mesh.NumberOfElts,), )
-                # K[EltRibbon_mov] = 1
-                # K[EltRibbon_mov[i]] = 2
-                # plot_as_matrix(K, mesh)
-                prefactor = 1.1
-                while np.sum(test_Res_grid1D) == 0:
-                    # take a larger range
-                    end_range = initial_prefactor * initial_prefactor  * mesh.cellDiag
-                    grid1D = np.arange(ai, ai + end_range, mesh.cellDiag / 20., dtype=np.float64)
-                    # compute the residuals
-                    Res_grid1D = ResFunc(grid1D, *TipAsmptargs)
-                    # check if it is possible to find a solution in the interval
-                    test_Res_grid1D = Res_grid1D > 0.
-                    if not np.sum(test_Res_grid1D) == 0:
-                        b_index = np.where(test_Res_grid1D)[0]
-                        b[i] = grid1D[b_index.min()]
-                        adv = int(b[i]/mesh.cellDiag)
-                        log.debug("         The front is advancing "+str(adv)+" cell diagonals ")
-                        if adv > 15:
-                            log.info("Failing the time step because the front is advancing more than 15 cell diagonals ")
-                            return a, b, 1
-                    else:
-                        prefactor = prefactor + 0.1
+                ## Adaption AM: There are two options here, either the cell effectively wants to advance too much, or we
+                ##              simply have thatthe roles of a and b are reverted (small recession of the front)
+                # -- Check if the residual increases along grid1D
+                # -- > we will never find a solution by searching further. The front is stagnant.
+                if np.sum(np.diff(Res_grid1D) > 0.) == 0:
+                    log.debug('No bracket found because the initial guess propagates to far. Assume stagnant fracture!')
+                    a[i] = np.nan
+                    b[i] = np.nan
+                else:
+                    ## In this case the fracture actuallz wants to grow much further. So we te trz to allow for it.
+                    log.debug("The front is advancing more than 8 cell diagonals --> trying to allow that")
+                    # from utility import plot_as_matrix
+                    # K = np.zeros((mesh.NumberOfElts,), )
+                    # K[EltRibbon_mov] = 1
+                    # K[EltRibbon_mov[i]] = 2
+                    # plot_as_matrix(K, mesh)
+                    prefactor = 1.1
+                    while np.sum(test_Res_grid1D) == 0:
+                        # take a larger range
+                        end_range = initial_prefactor * initial_prefactor * mesh.cellDiag
+                        grid1D = np.arange(ai, ai + end_range, mesh.cellDiag / 20., dtype=np.float64)
+                        # compute the residuals
+                        Res_grid1D = ResFunc(grid1D, *TipAsmptargs)
+                        # check if it is possible to find a solution in the interval
+                        test_Res_grid1D = Res_grid1D > 0.
+                        if not np.sum(test_Res_grid1D) == 0:
+                            b_index = np.where(test_Res_grid1D)[0]
+                            b[i] = grid1D[b_index.min()]
+                            adv = int(b[i]/mesh.cellDiag)
+                            log.debug("         The front is advancing "+str(adv)+" cell diagonals ")
+                            if adv > 15:
+                                log.info("Failing the time step because the front is advancing more than 15 cell diagonals ")
+                                return a, b, 1
+                        else:
+                            prefactor = prefactor + 0.1
+            ############################ END OF ADAPTION ############################
             elif np.sum(test_Res_grid1D) == len(test_Res_grid1D): #you have got all true
                 # the residual is positive everywhere. This means that
                 # the fracture should not even advance
@@ -731,7 +747,8 @@ def TipAsymInversion(w, frac, matProp, fluidProp, simParmtrs, dt=None, Kprime_k=
                                             ResFunc,
                                             simParmtrs,
                                             frac.EltRibbon[moving])
-        if status : return np.full(frac.EltRibbon.size, np.nan)
+        if status:
+            return np.full(frac.EltRibbon.size, np.nan)
     else:
         a, b = FindBracket_dist(w[frac.EltRibbon[moving]],
                                 Kprime[moving],

@@ -28,7 +28,7 @@ from properties import instrument_start, instrument_close
 from linear_solvers.linear_direct_solver import Direct_linear_solver
 from linear_solvers.linear_iterative_solver import Iterative_linear_solver
 from linear_solvers.preconditioners.prec_back_subst_EHL import EHL_iLU_Prec
-
+#from solid.elasticity_tip_correction import full_C_and_tip_correction_for_test
 
 def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, inj_properties, EltTip, partlyFilledTip, C, Boundary,
                 FillFrac, EltCrack, InCrack, LkOff, wTip, timeStep, Qin, perfNode, Vel, corr_ribbon, stagnant_tip,
@@ -68,7 +68,13 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
         # ---------------------------------------
 
         # Initialising the arrays
-        neg = np.array([], dtype=int)
+        neg = Fr_lstTmStp.closed
+        if len(neg)>0:
+            wc_to_impose = Fr_lstTmStp.w[neg]
+        else:
+            wc_to_impose = np.array([], dtype=int)
+        #neg = np.array([], dtype=int)
+
         new_neg = np.array([], dtype=int)
         active_contraint = True
 
@@ -85,9 +91,10 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
             imposed_val = np.delete(wTip, stagnant_tip)
             to_solve = np.append(to_solve, EltTip[stagnant_tip])
 
-        wc_to_impose = []
+        #wc_to_impose = []
         fully_closed = False
-        corr_ribb_flag = False
+        #corr_ribb_flag = False
+        to_open_cumm = np.asarray([], dtype=int)
 
         # Making and solving the system of equations. The width constraint is checked. If active, system is remade with
         # the constraint imposed and is resolved.
@@ -98,54 +105,58 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
 
             # define the strategy for the current loop, remove the cells with negative opening
             to_solve_k = np.setdiff1d(to_solve, neg, assume_unique=True)
-            to_impose_k = to_impose
-            imposed_val_k = imposed_val
+            # to_impose_k = to_impose
+            # imposed_val_k = imposed_val
 
             # ------
             # If a ribbon cell gets negative, then solve for opening in the corresponding tip if the latter was not
             # already in the list
             #    (the code below finds the tip cells with corresponding closed ribbon cells and add them in the list
             #    of elements to be solved.)
-            if len(neg) > 0 and len(to_impose) > 0:
-                if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
-                    if not corr_ribb_flag:
-                        # do it once
-                        if inj_same_footprint:
-                            EltTip_loc = np.array([], dtype=int)
-                        else:
-                            EltTip_loc = EltTip
-                        #   1) Returns the indices that would sort EltTip
-                        tip_sorted = np.argsort(EltTip_loc)
-                        #   2) Returns the positions of "to_impose" in "EltTip[tip_sorted]" ordered as to_impose
-                        to_impose_pstn = np.searchsorted(EltTip_loc[tip_sorted], to_impose)
-                        #   3) indexes of "to_impose" in EltTip ordered as to_impose
-                        ind_toImps_tip = tip_sorted[to_impose_pstn]
-                        #   4) list of "corr_ribbon" of "to_impose" ordered as to_impose
-                        corr_ribbon_TI = corr_ribbon[ind_toImps_tip]
-                        corr_ribb_flag = True
-
-                    # make a list of the ind of corresponding ribbon (and to_impose) that are in neg
-                    toImp_neg_rib = np.asarray([], dtype=np.int)
-                    for i, elem in enumerate(to_impose):
-                        if corr_ribbon_TI[i] in neg:
-                            toImp_neg_rib = np.append(toImp_neg_rib, i)
-
-                    # find the tip that are not in neg and whose ribbon are in neg and solve for opening there
-                    to_solve_k = np.append(to_solve_k, np.setdiff1d(to_impose[toImp_neg_rib], neg))
-                    to_impose_k = np.delete(to_impose, toImp_neg_rib)
-                    imposed_val_k = np.delete(imposed_val, toImp_neg_rib)
+            # if len(neg) > 0 and len(to_impose) > 0:
+            #     if sim_properties.solveTipCorrRib and corr_ribbon.size != 0:
+            #         if not corr_ribb_flag:
+            #             # do it once
+            #             if inj_same_footprint:
+            #                 EltTip_loc = np.array([], dtype=int)
+            #             else:
+            #                 EltTip_loc = EltTip
+            #             #   1) Returns the indices that would sort EltTip
+            #             tip_sorted = np.argsort(EltTip_loc)
+            #             #   2) Returns the positions of "to_impose" in "EltTip[tip_sorted]" ordered as to_impose
+            #             to_impose_pstn = np.searchsorted(EltTip_loc[tip_sorted], to_impose)
+            #             #   3) indexes of "to_impose" in EltTip ordered as to_impose
+            #             ind_toImps_tip = tip_sorted[to_impose_pstn]
+            #             #   4) list of "corr_ribbon" of "to_impose" ordered as to_impose
+            #             corr_ribbon_TI = corr_ribbon[ind_toImps_tip]
+            #             corr_ribb_flag = True
+            #
+            #         # make a list of the ind of corresponding ribbon (and to_impose) that are in neg
+            #         toImp_neg_rib = np.asarray([], dtype=np.int)
+            #         for i, elem in enumerate(to_impose):
+            #             if corr_ribbon_TI[i] in neg:
+            #                 toImp_neg_rib = np.append(toImp_neg_rib, i)
+            #
+            #         # find the tip that are not in neg and whose ribbon are in neg and solve for opening there
+            #         to_solve_k = np.append(to_solve_k, np.setdiff1d(to_impose[toImp_neg_rib], neg))
+            #         to_impose_k = np.delete(to_impose, toImp_neg_rib)
+            #         imposed_val_k = np.delete(imposed_val, toImp_neg_rib)
             # ------
 
+            _, comm_neg, comm_to_impose = np.intersect1d(neg, to_impose, return_indices=True)
+            to_impose_k = np.delete(to_impose, comm_to_impose)
+            imposed_val_k = np.delete(imposed_val, comm_to_impose)
+
             # set all what is in crack
-            EltCrack_k = np.concatenate((to_solve_k, neg))
-            EltCrack_k = np.concatenate((EltCrack_k, to_impose_k))
+            EltCrack_k = np.concatenate((to_solve_k, neg), dtype=int)
+            EltCrack_k = np.concatenate((EltCrack_k, to_impose_k),dtype=int)
 
 
             # ------
             # The code below finds the indices(in the EltCrack list) of the neighbours of all the cells in the crack.
             # This is done to avoid costly slicing of the large numpy arrays while making the linear system during the
             # fixed point iterations. For neighbors that are outside the fracture, len(EltCrack) + 1 is returned.
-            corr_nei = np.full((len(EltCrack_k), 4), len(EltCrack_k), dtype=np.int)
+            corr_nei = np.full((len(EltCrack_k), 4), len(EltCrack_k), dtype=int)
             for i, elem in enumerate(EltCrack_k):
                 corresponding = np.where(EltCrack_k == Fr_lstTmStp.mesh.NeiElements[elem, 0])[0]
                 if len(corresponding) > 0:
@@ -285,14 +296,14 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
                            np.asarray(inj_in_ch, dtype=int), np.asarray(inj_in_act, dtype=int), currentRate, sink)
 
                     guess_il = np.zeros(len(inj_cells) + 1)
-                    guess_il[1:] = Qin[inj_cells]
+                    #guess_il[1:] = Qin[inj_cells]
                     guess = np.concatenate((guess, guess_il))
 
                 # -Instantiate a direct or iterative linear solver object
                 if sim_properties.EHL_iter_lin_solve:
                     if not sim_properties.solve_monolithic:
                         if inj_same_footprint: rcmp_prec_before2ndIter = True
-                        else: rcmp_prec_before2ndIter = False
+                        else: rcmp_prec_before2ndIter = True
 
                         linear_solver = Iterative_linear_solver(sys_fun, sim_properties.gmres_tol,
                                                                 sim_properties.gmres_maxiter, sim_properties.gmres_Restart,
@@ -455,6 +466,54 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
                     log.debug('Iterating on cells with active width constraint...')
             else:
                 active_contraint = False
+
+            # pressure is evaluated to remove cells from the active contraint list where the fluid pressure is
+            # larger than the confining stress
+            pf_k = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+
+            if sim_properties.solve_monolithic and sim_properties.solveDeltaP:
+                ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
+                pf_k[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
+            elif not sim_properties.solve_monolithic:
+                if sim_properties.useBlockToeplizCompression:
+                    # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
+                    # the slow way:
+                    #pf_k[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+                    C._set_domain_and_codomain_IDX(EltCrack, to_solve_k)
+                    pf_k[to_solve_k] = C._matvec(w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+
+                else:
+                    # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
+                    pf_k[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+
+                # Effect of the finite domain
+                if Boundary is not None: pf_k[to_solve_k] = pf_k[to_solve_k] + Boundary.last_traction[to_solve_k]
+
+
+            if sim_properties.solveDeltaP:
+                pf_k[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf_k[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):
+                                                                          len(to_solve_k) + len(neg_km1) + len(
+                                                                              to_impose_k)]
+            else:
+                pf_k[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+                pf_k[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):
+                                        len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
+
+
+            # removing cells where the fluid pressure is greater than the confining stress. If the cells that
+            # are removed once re-appear in the set of cells where the width is less then the minimum residual
+            # width, they are not removed. In other words, the cells are removed once.
+            to_open = np.where(pf_k[neg] > mat_properties.SigmaO[neg])[0]
+            to_open = np.setdiff1d(to_open, to_open_cumm)
+            to_open_cumm = np.concatenate((to_open_cumm, to_open))
+
+            if len(to_open) > 0:
+                neg = np.delete(neg, to_open)
+                wc_to_impose = np.delete(wc_to_impose, to_open)
+                active_contraint = True
+
+                log.debug('removing cells from the active width constraint...')
         #
         # END OF THE LOOP ON THE active_contraint
 
@@ -464,35 +523,37 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
         # K[to_solve] = w[to_solve]
         # plot_as_matrix(K, Fr_lstTmStp.mesh)
 
+        # << moved in the loop above >>
         # prepare the  array containing the pressure
-        pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
-        if sim_properties.solve_monolithic and sim_properties.solveDeltaP:
-            ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
-            pf[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
-        elif not sim_properties.solve_monolithic:
-            if sim_properties.useBlockToeplizCompression:
-                C._set_domain_and_codomain_IDX(EltCrack, to_solve_k)
-                # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
-                pf[to_solve_k] = C._matvec(w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
-            else:
-                # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
-                pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+        # pf = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), dtype=np.float64)
+        # if sim_properties.solve_monolithic and sim_properties.solveDeltaP:
+        #     ch_act_toimpose = np.concatenate((to_solve_k, to_impose_k, neg_km1))
+        #     pf[ch_act_toimpose] = Fr_lstTmStp.pFluid[ch_act_toimpose] + sol[len(to_solve_k):]
+        # elif not sim_properties.solve_monolithic:
+        #     if sim_properties.useBlockToeplizCompression:
+        #         C._set_domain_and_codomain_IDX(EltCrack, to_solve_k)
+        #         # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
+        #         pf[to_solve_k] = C._matvec_fast(w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+        #     else:
+        #         # Fluid pressure in the channel evaluated by dot product between elasticity matrix and w
+        #         pf[to_solve_k] = np.dot(C[np.ix_(to_solve_k, EltCrack)], w[EltCrack]) + mat_properties.SigmaO[to_solve_k]
+        #
+        #     # Effect of the finite domain
+        #     if Boundary is not None: pf[to_solve_k] = pf[to_solve_k] + Boundary.last_traction[to_solve_k]
 
-            # Effect of the finite domain
-            if Boundary is not None: pf[to_solve_k] = pf[to_solve_k] + Boundary.last_traction[to_solve_k]
-
-            if sim_properties.solveDeltaP:
-                pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                #pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
-                # modified for injection line
-                pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):
-                                                                    len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
-            else:
-                pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
-                #pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
-                # modified for injection line
-                pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):
-                                        len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
+            # << moved in the loop above >>
+            # if sim_properties.solveDeltaP:
+            #     pf[neg_km1] = Fr_lstTmStp.pFluid[neg_km1] + sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+            #     #pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):]
+            #     # modified for injection line
+            #     pf[to_impose_k] = Fr_lstTmStp.pFluid[to_impose_k] + sol[len(to_solve_k) + len(neg_km1):
+            #                                                         len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
+            # else:
+            #     pf[neg_km1] = sol[len(to_solve_k):len(to_solve_k) + len(neg_km1)]
+            #     #pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):]
+            #     # modified for injection line
+            #     pf[to_impose_k] = sol[len(to_solve_k) + len(neg_km1):
+            #                             len(to_solve_k) + len(neg_km1) + len(to_impose_k)]
 
 
         if perfNode_nonLinSys is not None:
@@ -518,4 +579,4 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
         else:
             return_data = [data_nonLinSolve, neg_km1, fully_closed]
 
-        return w, pf, return_data
+        return w, pf_k, return_data

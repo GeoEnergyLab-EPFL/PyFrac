@@ -58,7 +58,7 @@ def convert_meshDict_to_mesh(fracture_list):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_srs=None, step_size=1, load_all=False,
-                   load_all_meshes=True):
+                   max_time=np.inf, load_all_meshes=True):
     """
     This function returns a list of the fractures. If address and simulation name are not provided, results from the
     default address and having the default name will be loaded.
@@ -75,6 +75,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
         step_size (int):                -- the number of time steps to skip before loading the next fracture. If not
                                            provided, all of the fractures will be loaded.
         load_all (bool):                -- avoid jumping time steps too close to each other
+        max_time (float):               -- the simulation gets loaded onlz up to that specific time.
         load_all_meshes (bool):         -- boolean to decide if the meshes should be loaded.
 
     Returns:
@@ -161,6 +162,8 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                         break
                 else:
                     next_t = ff.time + time_period
+                    if next_t >= max_time:
+                        break
 
     if fileNo >= 1e5:
         raise SystemExit('too many files.')
@@ -205,6 +208,11 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
                 else:
                     fr.mesh = mesh_ind
 
+    # saving the reference to the proper mesh! (i am not making a copy of the mesh per se)
+    for i in range(len(fracture_list)):
+        fr_i= fracture_list[i]
+        if isinstance(fr_i.mesh, int):
+            fracture_list[i].mesh = fracture_list[fr_i.mesh].mesh
 
     return fracture_list, properties
 

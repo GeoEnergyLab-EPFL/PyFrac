@@ -82,12 +82,17 @@ def TipAsym_UniversalW_delt_Res(w, *args):
     Ch = 2 * Cbar * dist ** 0.5 / (Vel ** 0.5 * w)
     sh = muPrime * Vel * dist ** 2 / (Eprime * w ** 3)
 
-    g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
-    delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
+    # Note: Kh > 1 means that the fracture does not propagate. The 1st order correction is based on a correction
+    #       to the toughness solution. Hence there is no correction to apply in this case which makes gdelt = 0.
+    if Kh >= 1.0:
+        gdelt = 0.
+    else:
+        g0 = f(Kh, 0.9911799823 * Ch, 10.392304845)
+        delt = 10.392304845 * (1 + 0.9911799823 * Ch) * g0
 
-    b = C2(delt) / C1(delt)
-    con = C1(delt)
-    gdelt = f(Kh, Ch * b, con)
+        b = C2(delt) / C1(delt)
+        con = C1(delt)
+        gdelt = f(Kh, Ch * b, con)
 
     return sh - gdelt
 
