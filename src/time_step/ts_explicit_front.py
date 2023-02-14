@@ -396,7 +396,8 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                  Fr_lstTmStp.mesh)
     Cprime_tip = mat_properties.Cprime[corr_ribbon]
 
-    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c or \
+            mat_properties.sizeDependentToughness[0] or mat_properties.velocityDependentToughness[0]:
         if not mat_properties.sizeDependentToughness[0] and not mat_properties.velocityDependentToughness[0]:
             if sim_properties.projMethod != 'LS_continousfront':
                 # get toughness from zero vertex
