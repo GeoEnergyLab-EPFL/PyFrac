@@ -146,6 +146,9 @@ class MaterialProperties:
                 self.sizeDependentToughness = [False]
             else:
                 raise SystemExit('Type of time dependent toughness not implemented.')
+        else:
+            self.sizeDependentToughness = [False]
+            self.velocityDependentToughness = [False]
 
         if K1c_func is not None: # and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates and the local propagation direction given by the angle alpha
