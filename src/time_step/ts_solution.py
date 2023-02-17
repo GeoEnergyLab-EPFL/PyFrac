@@ -21,6 +21,7 @@ from time_step.ts_implicit_front.inj_same_footprint import injection_same_footpr
 from level_set.level_set_utils import get_front_region
 from level_set.anisotropy import projection_from_ribbon_LS_gradient_at_tip, get_toughness_from_cellCenter_iter
 from properties import IterationProperties, instrument_start, instrument_close
+from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -59,6 +60,26 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
             Qin[inj_properties.delayed_second_injpoint_elem] = inj_properties.rate_delayed_inj_pt_func(Frac.time)/len(inj_properties.delayed_second_injpoint_elem)
         log.debug("\n  max value of the array Q(x,y) =   " + str(Qin.max()))
         log.debug("\n  Q at the delayed inj point    =   " + str(Qin[inj_properties.delayed_second_injpoint_elem]))
+
+    if mat_properties.sizeDependentToughness[0] or mat_properties.velocityDependentToughness[0]:
+        if mat_properties.sizeDependentToughness[0]:
+            K_Ic_current = (32 / np.pi) ** 0.5 * \
+                           get_fracture_size_dependent_toughness(Frac.Ffront, Frac.EltTip, Frac.v, Frac.mesh,
+                                                                 mat_properties.sizeDependentToughness)
+            log.debug("The current KIc is: " + str(K_Ic_current / ((32 / np.pi) ** 0.5)))
+        elif mat_properties.velocityDependentToughness[0]:
+            K_Ic_current = (32 / np.pi) ** 0.5 * \
+                           get_fracture_velocity_dependent_toughness(Frac.EltTip, Frac.v,
+                                                                     mat_properties.velocityDependentToughness)
+
+        if K_Ic_current < 0.95 * mat_properties.Kprime[0]:
+            K_Ic_current = 0.95 * mat_properties.Kprime[0]
+            log.debug("Limiting the toughness reduction to 5%: " + str(K_Ic_current / ((32 / np.pi) ** 0.5)))
+
+
+        mat_properties.K1c = K_Ic_current / ((32 / np.pi) ** 0.5) * np.ones((Frac.mesh.NumberOfElts,), float)
+        mat_properties.Kprime = K_Ic_current * np.ones((Frac.mesh.NumberOfElts,), float)
+
 
     if sim_properties.frontAdvancing == 'explicit':
 
