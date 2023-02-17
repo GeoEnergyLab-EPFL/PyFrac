@@ -26,7 +26,6 @@ from time_step.ts_toughess_direction_loop import toughness_direction_loop
 from tip.tip_inversion import StressIntensityFactor
 from tip.volume_integral import Integral_over_cell, find_corresponding_ribbon_cell, leak_off_stagnant_tip
 from utilities.postprocess_fracture import append_to_json_file
-from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties,
@@ -303,8 +302,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Cprime_tip = mat_properties.Cprime[corr_ribbon]
 
     # Calculating toughness at tip to be used to calculate the volume integral in the tip cells
-    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c or \
-            mat_properties.sizeDependentToughness[0] or mat_properties.velocityDependentToughness[0]:
+    if sim_properties.paramFromTip or mat_properties.anisotropic_K1c or mat_properties.inv_with_heter_K1c:
         if not mat_properties.sizeDependentToughness[0] and not mat_properties.velocityDependentToughness[0]:
             if sim_properties.projMethod != 'LS_continousfront':
                 # get toughness from zero vertex
@@ -336,25 +334,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                              mat_properties,
                                                                              alpha_k,
                                                                              get_from_mid_front = False)
-        else:
-            if mat_properties.sizeDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltTip_k] - Fr_lstTmStp.sgndDist[EltTip_k]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_size_dependent_toughness(Ffront, EltTip_k, Vel_k, Fr_lstTmStp.mesh,
-                                                                           mat_properties.sizeDependentToughness))
-                log.debug("The current toughness is: " + str(Kprime_tip[0]))
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-            elif mat_properties.velocityDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_velocity_dependent_toughness(EltsTipNew, Vel_k,
-                                                                               mat_properties.velocityDependentToughness))
-            mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
-                                                                                 ,float)
-            mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
     # from utility import plot_as_matrix
     # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
