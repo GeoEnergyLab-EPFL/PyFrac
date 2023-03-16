@@ -637,7 +637,7 @@ class CartesianMesh:
         precision = 0.1*np.sqrt(np.finfo(float).eps)
 
         cellIDs = np.intersect1d(np.where(abs(self.CenterCoor[:, 0] - x) < self.hx / 2. + precision),
-                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2. + precision))
+                       np.where(abs(self.CenterCoor[:, 1] - y) < self.hy / 2. + precision)).flatten()
 
         if len(cellIDs) > 1:
             deltaXi = self.CenterCoor[cellIDs, 0] - x
@@ -648,11 +648,11 @@ class CartesianMesh:
             closest = np.where(dist==dist.min())[0]
             if len(closest)>1:
                 log.warning("Can't find the closest among "+str(len(closest))+" cells --> returning the first of them")
-                return np.asarray([cellIDs[0]])
+                return np.asarray([cellIDs[0]]).flatten()
             else:
-                return np.asarray([cellIDs[closest]])
+                return np.asarray([cellIDs[closest]]).flatten()
         else:
-            return cellIDs
+            return cellIDs.flatten()
 
     # ----------------------------------------------------------------------------------------------------------------------
     def get_VertexCoor(self):
