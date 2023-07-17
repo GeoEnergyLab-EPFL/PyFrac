@@ -93,7 +93,6 @@ solve_sparse = True                     # if True, the fluid conductivity matrix
 tip_asymptote = 'U1'                    # the tip_asymptote to be used (see class documentation for details).
 elastic_Kernel = 'R0'                   # specify 'R4' for the bi-quadratic DD-element and 'R0' for the constant DD-element.
 gravity = False                         # if True, the effect of gravity will be taken into account.
-gravityValue = 9.81                     # default value of earth gravitational acceleration
 TI_Kernel_exec_path = '../TI_Kernel/build' # the folder containing the executable to calculate TI elasticity matrix.
 send_phone_msg = False                  # if True, you need to set up the function send_phone_message in the file utility
 levelSetBandPrefactor = 12.66           # prefactor deciding on the thickness of the band where the level set get's

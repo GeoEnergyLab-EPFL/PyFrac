@@ -2070,8 +2070,8 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routi
     """
 
     # * -- For back compatibility, we check if the fracture properties have a stored gravity Value -- * #
-    if not hasattr(SimProp, 'gravityValue'):
-        SimProp.gravityValue = 9.81
+    if not hasattr(Solid, 'gravityValue'):
+        Solid.gravityValue = 9.81 * np.ones(Solid.SigmaO.size, float)
 
     # * -- For back compatibility, we check if the fracture properties have a stored density -- * #
     hasDensity = True
@@ -2515,7 +2515,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
     # * -- Extract some basical information -- * #
     cell_area = fr_i_mesh.hx * fr_i_mesh.hy     # the surface of one cell (regular grid)
     w = fr_i.w[fr_i.EltCrack]                   # the opening of all cells in the crack
-    gravity = SimProp.gravityValue              # we assume that the gravity is along -y
+    gravity = SimProp.gravityValue              # we assume that the gravity is along -y todo: needs to be resolved
     rho_f = Fluid.density                       # fluid density
     nEltCrack=fr_i.EltCrack.size                # number of cells in the crack
 
@@ -2535,7 +2535,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
             # - We average only the velocities in the buoyant direction as those will give the main contribution - #
             Vy[i] = (fluid_vel[5, i] + fluid_vel[7, i]) / 2.
             # - The external power is velocity * opening * flui density * gravitational acceleration - #
-            External_p_gravity_vec[i] = Vy[i] * w[i] * rho_f * (-gravity)
+            External_p_gravity_vec[i] = Vy[i] * w[i] * rho_f * (-gravity[i])
         else:
             # - For tip elements the normal of the propagation direction is. - #
             # Note: Dissipation is then calculated assuming g in -y
@@ -2553,7 +2553,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
                 normal_y = 0.
             # - We ultiply the fracture velocity (= fluid velocity) by the normal in y as we assume g in -y - #
             External_p_gravity_vec[i] = fr_i.FillF[tip_ind] * w[i] * rho_f * np.abs(fr_i.v[tip_ind]) * normal_y *\
-                                         (-gravity)
+                                         (-gravity[i])
 
     # * -- Export the total dissipated power by multiplying with the uniform cell_area -- * #
     return cell_area * np.sum(External_p_gravity_vec)
