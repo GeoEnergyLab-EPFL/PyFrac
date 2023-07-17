@@ -55,6 +55,7 @@ class MaterialProperties:
         SigmaO (ndarray):           -- in-situ confining stress field normal to fracture surface.
         grainSize (float):          -- the grain size of the rock; used to calculate the relative roughness.
         anisotropic_K1c (bool):     -- if True, the toughness is considered anisotropic.
+        time_dep_toughness(ndarray):-- array to set if the toughness is fracture size or velocity dependent
         Kc1 (float):                -- the fracture toughness along the x-axis, in case it is anisotropic.
         TI_elasticity (bool):       -- the flag specifying transverse isotropic elasticity.
         Cij (ndarray):              -- the transverse isotropic stiffness matrix (in the canonical basis).
@@ -75,9 +76,10 @@ class MaterialProperties:
     """
 
     def __init__(self, Mesh, Eprime, toughness=0., Carters_coef=0., Carters_t0=None, confining_stress=0.,
-                 grain_size=0., K1c_func=None, anisotropic_K1c=False, confining_stress_func=None,
-                 Carters_coef_func=None, TI_elasticity=False, Cij=None, free_surf=False, free_surf_depth=1.e300,
-                 TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700, density_func=None):
+                 grain_size=0., K1c_func=None, anisotropic_K1c=False, time_dep_toughness=[False],
+                 confining_stress_func=None, Carters_coef_func=None, TI_elasticity=False, Cij=None, free_surf=False,
+                 free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700,
+                 density_func=None):
         """
         The constructor function
         """
@@ -122,31 +124,31 @@ class MaterialProperties:
             self.SigmaO = confining_stress * np.ones((Mesh.NumberOfElts,), float)
 
         self.grainSize = grain_size
-        if isinstance(anisotropic_K1c, bool):
-            self.velocityDependentToughness = [False]
-            self.sizeDependentToughness = [False]
-            self.anisotropic_K1c = anisotropic_K1c
-            if anisotropic_K1c:
-                try:
-                    self.Kc1 = K1c_func(0,0,0)
-                except TypeError:
-                    raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take three'
-                                     ' arguments, i.e. the coordinates x and y and the angle of propagation (0 to 2Pi) and return a toughness value.')
-            else:
-                self.Kc1 = None
-        elif anisotropic_K1c[0] == "size":
-            self.anisotropic_K1c = True
-            self.Kc1 = None
-            self.velocityDependentToughness = [False]
-            self.sizeDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3]]
-        elif anisotropic_K1c[0] == "velocity":
-            self.anisotropic_K1c = True
-            self.Kc1 = None
-            self.velocityDependentToughness = [True, anisotropic_K1c[1], anisotropic_K1c[2], anisotropic_K1c[3],
-                                               anisotropic_K1c[4]]
-            self.sizeDependentToughness = [False]
+        self.anisotropic_K1c = anisotropic_K1c
+        if anisotropic_K1c:
+            try:
+                self.Kc1 = K1c_func(0, 0, 0)
+            except TypeError:
+                raise SystemExit('The given Kprime function is not correct for anisotropic case! It should take three'
+                                 ' arguments, i.e. the coordinates x and y and the angle of propagation (0 to 2Pi) and return a toughness value.')
         else:
-            raise SystemExit('Type of toughness anisotropy not implemented.')
+            self.Kc1 = None
+
+        if time_dep_toughness[0] == True:
+            if time_dep_toughness[1] == "size":
+                self.Kc1 = None
+                self.velocityDependentToughness = [False]
+                self.sizeDependentToughness = [True, time_dep_toughness[2], time_dep_toughness[3], time_dep_toughness[4]]
+            elif time_dep_toughness[1] == "velocity":
+                self.Kc1 = None
+                self.velocityDependentToughness = [True, time_dep_toughness[2], time_dep_toughness[3],
+                                                   time_dep_toughness[4], anisotropic_K1c[5]]
+                self.sizeDependentToughness = [False]
+            else:
+                raise SystemExit('Type of time dependent toughness not implemented.')
+        else:
+            self.sizeDependentToughness = [False]
+            self.velocityDependentToughness = [False]
 
         if K1c_func is not None: # and not self.anisotropic_K1c:
             # the function should return toughness by taking x and y coordinates and the local propagation direction given by the angle alpha
