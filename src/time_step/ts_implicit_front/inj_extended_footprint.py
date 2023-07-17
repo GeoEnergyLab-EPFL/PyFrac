@@ -234,6 +234,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+    sgndDist_k[EltsTipNew[Vel_k < 0]] = Fr_lstTmStp.sgndDist[EltsTipNew[Vel_k < 0]]
     Vel_k[Vel_k < 0] = 0
 
     # Calculate filling fraction of the tip cells for the current fracture position
@@ -538,7 +539,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
-    if np.any(Vel_k[new_channel] <= 0.):  # negative velocitz set to zero...
+    if np.any(Vel_k[new_channel] <= 0.):  # negative velocity set to zero...
         Vel_k[new_channel[np.where(Vel_k[new_channel] <= 0.)]] = 1e-6
         log.debug("Some zero velocities are set to a minimum velocity to evaluate the leak-off.")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]
