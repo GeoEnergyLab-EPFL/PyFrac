@@ -26,7 +26,6 @@ from time_step.ts_toughess_direction_loop import toughness_direction_loop
 from tip.tip_inversion import StressIntensityFactor
 from tip.volume_integral import Integral_over_cell, find_corresponding_ribbon_cell, leak_off_stagnant_tip
 from utilities.postprocess_fracture import append_to_json_file
-from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 
 
 def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_properties, fluid_properties, inj_properties,
@@ -235,6 +234,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     # the velocity of the front for the current front position
     # todo: not accurate on the first iteration. needed to be checked
     Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
+    sgndDist_k[EltsTipNew[Vel_k < 0]] = Fr_lstTmStp.sgndDist[EltsTipNew[Vel_k < 0]]
     Vel_k[Vel_k < 0] = 0
 
     # Calculate filling fraction of the tip cells for the current fracture position
@@ -335,25 +335,6 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
                                                                              mat_properties,
                                                                              alpha_k,
                                                                              get_from_mid_front = False)
-        else:
-            if mat_properties.sizeDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltTip_k] - Fr_lstTmStp.sgndDist[EltTip_k]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_size_dependent_toughness(Ffront, EltTip_k, Vel_k, Fr_lstTmStp.mesh,
-                                                                           mat_properties.sizeDependentToughness))
-                log.debug("The current toughness is: " + str(Kprime_tip[0]))
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-            elif mat_properties.velocityDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_velocity_dependent_toughness(EltsTipNew, Vel_k,
-                                                                               mat_properties.velocityDependentToughness))
-            mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
-                                                                                 ,float)
-            mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
     # from utility import plot_as_matrix
     # K = np.zeros((Fr_lstTmStp.mesh.NumberOfElts,), )
@@ -558,7 +539,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     new_channel = np.array([], dtype=int)
     for i in nc:
         new_channel = np.append(new_channel, np.where(EltsTipNew == i)[0])
-    if np.any(Vel_k[new_channel] <= 0.):  # negative velocitz set to zero...
+    if np.any(Vel_k[new_channel] <= 0.):  # negative velocity set to zero...
         Vel_k[new_channel[np.where(Vel_k[new_channel] <= 0.)]] = 1e-6
         log.debug("Some zero velocities are set to a minimum velocity to evaluate the leak-off.")
     t_enter = Fr_lstTmStp.time + timeStep - l_k[new_channel] / Vel_k[new_channel]

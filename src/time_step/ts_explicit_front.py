@@ -20,7 +20,6 @@ from level_set.continuous_front_reconstruction import reconstruct_front_continuo
 from level_set.anisotropy import reconstruct_front_LS_gradient, get_toughness_from_Front
 from level_set.anisotropy import find_zero_vertex
 from level_set.anisotropy import get_toughness_from_zeroVertex
-from level_set.anisotropy import get_fracture_size_dependent_toughness, get_fracture_velocity_dependent_toughness
 from time_step.ts_toughess_direction_loop import toughness_direction_loop
 
 from tip.volume_integral import Integral_over_cell
@@ -428,25 +427,6 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
                                                                              mat_properties,
                                                                              alpha_k,
                                                                              get_from_mid_front = False)
-        else:
-            if mat_properties.sizeDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltTip_k] - Fr_lstTmStp.sgndDist[EltTip_k]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_size_dependent_toughness(Ffront, EltTip_k, Vel_k, Fr_lstTmStp.mesh,
-                                                                           mat_properties.sizeDependentToughness))
-                log.debug("The current toughness is: " + str(Kprime_tip[0]))
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-            elif mat_properties.velocityDependentToughness[0]:
-                Vel_k = -(sgndDist_k[EltsTipNew] - Fr_lstTmStp.sgndDist[EltsTipNew]) / timeStep
-                Vel_k[Vel_k < 0] = 0
-                Kprime_tip = np.full((len(EltsTipNew,),), (32 / np.pi) ** 0.5 *
-                                     get_fracture_velocity_dependent_toughness(EltsTipNew, Vel_k,
-                                                                               mat_properties.velocityDependentToughness))
-            mat_properties.K1c = Kprime_tip[0] / ((32 / np.pi) ** 0.5) * np.ones((Fr_lstTmStp.mesh.NumberOfElts,)
-                                                                                 ,float)
-            mat_properties.Kprime = Kprime_tip[0] * np.ones((Fr_lstTmStp.mesh.NumberOfElts,), float)
 
     elif not mat_properties.inv_with_heter_K1c:
                 Kprime_tip = mat_properties.Kprime[corr_ribbon]
@@ -719,6 +699,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
         return front_region, None
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
+    sgndDist_k[Fr_kplus1.EltTip[Fr_kplus1.v < 0]] = Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip[Fr_kplus1.v < 0]]
     Fr_kplus1.v[Fr_kplus1.v < 0] = 0
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront

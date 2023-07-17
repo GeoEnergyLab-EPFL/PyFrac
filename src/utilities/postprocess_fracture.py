@@ -151,6 +151,7 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
             if 1. - next_t / ff.time >= -1e-8:
                 # if the current fracture time has advanced the output time period
                 log.info('Returning fracture at ' + repr(ff.time) + ' s')
+                log.info('Returning file number ' + repr(fileNo - 1))
 
                 fracture_list.append(ff)
 
@@ -2152,8 +2153,8 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routi
             Elastic_Stress_P[iter] = 2 * get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pFluid-fr_i.pNet,
                                                   fr_im1.pFluid-fr_im1.pNet)
             External_P[iter] = get_External_P(fr_im1, fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y)
-            Internal_P[iter] = Viscous_P[iter]+Fracture_P[iter]+Elastic_P[iter]+Elastic_Stress_P[iter]
             LeakOff_P[iter] = get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid)
+            Internal_P[iter] = Viscous_P[iter]+Fracture_P[iter]+Elastic_P[iter]+Elastic_Stress_P[iter] + LeakOff_P[iter]
 
             # - Store the time and mark the next iteration - #
             power_time_steps[iter] = fr_i.time
@@ -2195,7 +2196,9 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh):
     # - Loop over all the elements - #
     for i in range(nEltCrack):
         ID = fr_i.EltCrack[i]
-        if not ID in fr_i.EltTip:
+        if w[i] == 0.:
+            Viscous_P_vec[i] = 0.
+        elif not ID in fr_i.EltTip:
             sqVx[i] = (fluid_vel[0, i]**2 + fluid_vel[2, i]**2 + fluid_vel[4, i]**2 + fluid_vel[6, i]**2 )/4.
             sqVy[i] = (fluid_vel[1, i]**2 + fluid_vel[3, i]**2 + fluid_vel[5, i]**2 + fluid_vel[7, i]**2 )/4.
             sqV[i] = sqVx[i] + sqVy[i]
@@ -2243,6 +2246,41 @@ def get_l_Ffront_ordered_as_v(Ffront, EltTip, mesh):
 
         # - Get the element index - #
         frontIDlist[point_ID] = mesh.locate_element(center_collection_x[point_ID], center_collection_y[point_ID])[0]
+        if frontIDlist[point_ID] not in EltTip:
+            if center_collection_x[point_ID] >= mesh.domainLimits[3] + mesh.hx / 2. or \
+                    center_collection_y[point_ID] >= mesh.domainLimits[1] + mesh.hy / 2. \
+                    or center_collection_x[point_ID] <= mesh.domainLimits[2] - mesh.hx / 2. or \
+                    center_collection_y[point_ID] <= mesh.domainLimits[0] - mesh.hy / 2.:
+                print("ERROR Point outside domain")
+                frontIDlist[point_ID] = np.nan
+
+            precision = 0.1 * np.sqrt(np.finfo(float).eps)
+
+            cellIDs = np.intersect1d(np.where(abs(mesh.CenterCoor[:, 0] - center_collection_x[point_ID]) <
+                                              mesh.hx / 2. + precision),
+                                     np.where(abs(mesh.CenterCoor[:, 1] - center_collection_y[point_ID]) <
+                                              mesh.hy / 2. + precision)).flatten()
+
+            common = np.intersect1d(cellIDs, EltTip)
+            if len(common) == 1:
+                frontIDlist[point_ID] = common[0]
+            elif len(common) >= 1:
+                deltaXi = mesh.CenterCoor[common, 0] - center_collection_x[point_ID]
+                deltaXi = deltaXi * deltaXi
+                deltaYi = mesh.CenterCoor[common, 1] - center_collection_y[point_ID]
+                deltaYi = deltaYi * deltaYi
+                dist = deltaXi + deltaYi
+                closest = np.where(dist == dist.min())[0]
+                if len(closest) > 1:
+                    print(
+                        "Can't find the closest among " + str(len(closest)) + " cells --> returning the first of them")
+                    frontIDlist[point_ID] = np.asarray([common[0]]).flatten()[0]
+                else:
+                    frontIDlist[point_ID] = np.asarray([common[closest]]).flatten()[0]
+            else:
+                print("ERROR Not able to identify the front element, searching from neighbours, to be implemented")
+                SystemExit()
+                # HERE I NEED TO SOLVE IT!
 
     # * -- We check if we have duplicate front segments for one tip cell -- * #
     frontIDlist_new = np.unique(frontIDlist)
@@ -2258,7 +2296,7 @@ def get_l_Ffront_ordered_as_v(Ffront, EltTip, mesh):
         SystemExit()
 
     # * -- The tip elements of the fracture do not correspond to the ones we've derived -- * #
-    if np.sum(np.sort(EltTip) - np.sort(frontIDlist_new)) != 0:
+    if len(np.setdiff1d(EltTip, frontIDlist_new)) != 0:
         print("ERROR Fr.EltTip does not contain the same elements as in 'frontIDlist_new' ")
         SystemExit()
 
@@ -2391,21 +2429,24 @@ def get_Elastic_P(fr_im1, fr_i, fr_i_mesh, traction_i, traction_im1):
     # * -- Initialize the solution vector -- * #
     Elastic_P_vec = np.zeros(nEltCrack)
 
-    # * -- Loop over all the elements in the crack -- * #
-    for i in range(nEltCrack):
-        ID = fr_i.EltCrack[i]   # The index of the cell in the global context
-        w_old = fr_im1.w[ID]    # The opening of the cell in the previous time
+    if dt != 0:
+        # * -- Loop over all the elements in the crack -- * #
+        for i in range(nEltCrack):
+            ID = fr_i.EltCrack[i]   # The index of the cell in the global context
+            w_old = fr_im1.w[ID]    # The opening of the cell in the previous time
 
-        # - Switch in function of the cell beeing a channel or a tip element - #
-        if not ID in fr_i.EltTip:
-            Elastic_P_vec[i] = 0.5 * (w[i]*traction_i[ID]-traction_im1[ID]*w_old)/dt
-        else:
-            # - If a tip element, identify the corresponding filling fraction and apply it to the result - #
-            tip_ind = np.where(fr_i.EltTip == ID)[0]
-            Elastic_P_vec[i] = fr_i.FillF[tip_ind] * 0.5 * (w[i]*traction_i[ID]-traction_im1[ID]*w_old)/dt
+            # - Switch in function of the cell beeing a channel or a tip element - #
+            if not ID in fr_i.EltTip:
+                Elastic_P_vec[i] = 0.5 * (w[i]*traction_i[ID]-traction_im1[ID]*w_old)/dt
+            else:
+                # - If a tip element, identify the corresponding filling fraction and apply it to the result - #
+                tip_ind = np.where(fr_i.EltTip == ID)[0]
+                Elastic_P_vec[i] = fr_i.FillF[tip_ind] * 0.5 * (w[i]*traction_i[ID]-traction_im1[ID]*w_old)/dt
 
-    # * -- Export the total dissipated power -- * #
-    return cell_area * np.sum(Elastic_P_vec)
+        # * -- Export the total dissipated power -- * #
+        return cell_area * np.sum(Elastic_P_vec)
+    else:
+        return 0.
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -2446,7 +2487,7 @@ def get_External_injection(fr_im1, fr_i):
     # * -- The external power added by injection is given by the net pressure times the injection rate -- * #
     #ToDo: to be generalized
     External_p_inj = 0.
-    if len(fr_i.source) != 0:
+    if len(fr_i.source) != 0 and (fr_i.time - fr_im1.time) != 0.:
         External_p_inj = fr_i.pFluid[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) / (
                     fr_i.time - fr_im1.time)
 
@@ -2506,7 +2547,10 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
                                             100*np.sqrt(np.finfo(float).eps))
             normal_x = xint - coord_zero_vertex[0]
             normal_y = yint - coord_zero_vertex[1]
-            normal_y = normal_y/np.sqrt(normal_x ** 2 + normal_y ** 2)
+            if normal_x ** 2 + normal_y ** 2 != 0:
+                normal_y = normal_y/np.sqrt(normal_x ** 2 + normal_y ** 2)
+            else:
+                normal_y = 0.
             # - We ultiply the fracture velocity (= fluid velocity) by the normal in y as we assume g in -y - #
             External_p_gravity_vec[i] = fr_i.FillF[tip_ind] * w[i] * rho_f * np.abs(fr_i.v[tip_ind]) * normal_y *\
                                          (-gravity)
@@ -2528,9 +2572,9 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid):
     """
 
     # * -- Check if we do not have a zero leak-off case -- * #
-    if sum(Solid.Cprime) != 0:
+    dt = np.abs(fr_i.time - fr_im1.time) # the time step
+    if sum(Solid.Cprime) != 0 and dt != 0.:
         # * -- Extract some base parameters -- * #
-        dt = np.abs(fr_i.time - fr_im1.time)        # the time step
         cell_area = fr_i_mesh.hx * fr_i_mesh.hy     # the cell area (constant cell grid)
         nEltCrack = fr_i.EltCrack.size              # the number of elements in the crack
 
