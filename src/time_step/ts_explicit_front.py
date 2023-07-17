@@ -699,6 +699,7 @@ def time_step_explicit_front(Fr_lstTmStp, C, Boundary, timeStep, Qin, mat_proper
         return front_region, None
 
     Fr_kplus1.v = -(sgndDist_k[Fr_kplus1.EltTip] - Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip]) / timeStep
+    sgndDist_k[Fr_kplus1.EltTip[Fr_kplus1.v < 0]] = Fr_lstTmStp.sgndDist[Fr_kplus1.EltTip[Fr_kplus1.v < 0]]
     Fr_kplus1.v[Fr_kplus1.v < 0] = 0
     Fr_kplus1.sgndDist = sgndDist_k
     Fr_kplus1.Ffront_last = Fr_lstTmStp.Ffront
