@@ -43,6 +43,10 @@ class MaterialProperties:
         free_surf_depth (float):        -- the depth of the fracture from the free surface.
         TI_plane_angle (float):         -- the angle of the plane of the fracture with respect to the free surface.
         minimum_width (float):          -- minimum width corresponding to the asperity of the material.
+        gravityValue (ndarray):         -- value of the specific gravity vector at every point
+        gravityValueFunc (function):    -- the function giving the specific gravity vector on the domain. It should
+                                           take two arguments (x, y) to give the coefficient on these coordinates. It is
+                                           also used to get the leak off coefficient if the domain is re-meshed.
 
 
     Attributes:
@@ -79,7 +83,7 @@ class MaterialProperties:
                  grain_size=0., K1c_func=None, anisotropic_K1c=False, time_dep_toughness=[False],
                  confining_stress_func=None, Carters_coef_func=None, TI_elasticity=False, Cij=None, free_surf=False,
                  free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700,
-                 density_func=None):
+                 density_func=None, gravity_value=9.81, gravity_value_func=None):
         """
         The constructor function
         """
@@ -191,14 +195,24 @@ class MaterialProperties:
         else:
             self.density = density * np.ones((Mesh.NumberOfElts,), float)
 
+        #  initiate the gravity vector
+        if isinstance(gravity_value, np.ndarray):  # check if float or ndarray
+            if gravity_value.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
+                self.gravityValue = gravity_value
+            else:
+                raise ValueError('Error in the size of Sigma input!')
+        else:
+            self.gravityValue = gravity_value * np.ones((2*Mesh.NumberOfElts,), float)
+
         self.K1cFunc = K1c_func
         self.SigmaOFunc = confining_stress_func
         self.ClFunc = Carters_coef_func
         self.DensityFunc = density_func
+        self.gravityValueFunc = gravity_value_func
 
         # overriding with the values evaluated by the given functions
         if (K1c_func is not None) or (confining_stress_func is not None) or (Carters_coef_func is not None) \
-                or (density_func is not None):
+                or (density_func is not None) or (gravity_value_func is not None):
             self.remesh(Mesh)
 
         self.wc = minimum_width
@@ -251,6 +265,13 @@ class MaterialProperties:
                 self.density[i] = self.DensityFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
         else:
             self.density = np.full((mesh.NumberOfElts,), self.density[0])
+
+        if self.gravityValueFunc is not None:
+            self.gravityValue = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+            for i in range(mesh.NumberOfElts):
+                self.gravityValue[2*i:2*i+1] = self.gravityValueFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+        else:
+            self.gravityValue = np.full((2*mesh.NumberOfElts,), self.gravityValue[0])
 
     # ------------------------------------------------------------------------------------------------------------------
 
