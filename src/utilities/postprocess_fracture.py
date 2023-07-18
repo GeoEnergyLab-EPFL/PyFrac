@@ -2071,7 +2071,8 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list): #AM 2022, based on CP routi
 
     # * -- For back compatibility, we check if the fracture properties have a stored gravity Value -- * #
     if not hasattr(Solid, 'gravityValue'):
-        Solid.gravityValue = 9.81 * np.ones(Solid.SigmaO.size, float)
+        Solid.gravityValue = np.zeros((2 * len(Solid.Sigma0),), float)
+        Solid.gravityValue[1:-1:2] = -9.81
 
     # * -- For back compatibility, we check if the fracture properties have a stored density -- * #
     hasDensity = True
@@ -2515,7 +2516,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y):
     # * -- Extract some basical information -- * #
     cell_area = fr_i_mesh.hx * fr_i_mesh.hy     # the surface of one cell (regular grid)
     w = fr_i.w[fr_i.EltCrack]                   # the opening of all cells in the crack
-    gravity = SimProp.gravityValue              # we assume that the gravity is along -y todo: needs to be resolved
+    gravity = SimProp.gravityValue
     rho_f = Fluid.density                       # fluid density
     nEltCrack=fr_i.EltCrack.size                # number of cells in the crack
 
