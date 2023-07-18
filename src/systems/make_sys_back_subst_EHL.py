@@ -92,7 +92,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_sparse(solk, interItr, 
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,  mat_prop, sim_prop)
 
 
     n_ch = len(to_solve)
@@ -263,7 +263,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse(solk, int
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -466,7 +466,7 @@ def make_local_elast_sys(solk, interItr, *args, return_w=False, dtype = np.float
     FinDiffOprtr = FinDiffOprtr.tocsr()
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    mat_prop, sim_prop)
 
     #a = a + time.time()
     #print(f'2 {a}')
@@ -880,7 +880,7 @@ class EHL_sys_obj(LinearOperator):
       self.FinDiffOprtr = FinDiffOprtr
 
       G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
-                       frac.mesh, InCrack, sim_prop)
+                       frac.mesh, InCrack, mat_prop, sim_prop)
 
       S = np.zeros((n_total,), dtype=self.dtype)
 
@@ -1121,7 +1121,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted(solk, interItr, *args):
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1291,7 +1291,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP(solk, interItr, 
 
 
     G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+                    frac.mesh,  InCrack,    mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1452,7 +1452,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_injection(solk, 
                                                 lst_edgeInCrk)
 
     G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
-                     frac.mesh, InCrack, sim_prop)
+                     frac.mesh, InCrack, mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)
@@ -1634,7 +1634,7 @@ def MakeEquationSystem_ViscousFluid_pressure_substituted_deltaP_sparse_injection
                                                 lst_edgeInCrk)
 
     G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
-                     frac.mesh, InCrack, sim_prop)
+                     frac.mesh, InCrack, mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)

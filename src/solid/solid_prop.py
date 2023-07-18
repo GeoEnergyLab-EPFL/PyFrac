@@ -278,7 +278,7 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.gravityValue[2*i:2*i+1] = self.gravityValueFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
         else:
-            gravityValueInt = np.full((mesh.NumberOfElts,), self.gravityValue[0])
+            gravityValueInt = np.full((2 * mesh.NumberOfElts,), self.gravityValue[0])
             gravityValueInt[1:-1:2] = self.gravityValue[1]
             self.gravityValue = gravityValueInt
 
