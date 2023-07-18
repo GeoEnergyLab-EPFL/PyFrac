@@ -274,9 +274,9 @@ class MaterialProperties:
             self.density = np.full((mesh.NumberOfElts,), self.density[0])
 
         if self.gravityValueFunc is not None:
-            self.gravityValue = np.empty((mesh.NumberOfElts,), dtype=np.float64)
+            self.gravityValue = np.empty((2 * mesh.NumberOfElts,), dtype=np.float64)
             for i in range(mesh.NumberOfElts):
-                self.gravityValue[2*i:2*i+1] = self.gravityValueFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
+                self.gravityValue[2*i:2*i+2] = self.gravityValueFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
         else:
             gravityValueInt = np.full((2 * mesh.NumberOfElts,), self.gravityValue[0])
             gravityValueInt[1:-1:2] = self.gravityValue[1]
