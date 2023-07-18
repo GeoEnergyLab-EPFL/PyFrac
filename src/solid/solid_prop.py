@@ -83,7 +83,7 @@ class MaterialProperties:
                  grain_size=0., K1c_func=None, anisotropic_K1c=False, time_dep_toughness=[False],
                  confining_stress_func=None, Carters_coef_func=None, TI_elasticity=False, Cij=None, free_surf=False,
                  free_surf_depth=1.e300, TI_plane_angle=0., minimum_width=1e-6, pore_pressure=-1.e100, density=2700,
-                 density_func=None, gravity_value=9.81, gravity_value_func=None):
+                 density_func=None, gravity_value=[9.81, math.pi/2, -math.pi/2], gravity_value_func=None):
         """
         The constructor function
         """
@@ -200,9 +200,16 @@ class MaterialProperties:
             if gravity_value.size == Mesh.NumberOfElts:  # check if size equal to the mesh size
                 self.gravityValue = gravity_value
             else:
-                raise ValueError('Error in the size of Sigma input!')
+                raise ValueError('Error in the size of gravity input!')
         else:
-            self.gravityValue = gravity_value * np.ones((2*Mesh.NumberOfElts,), float)
+            gravityX = gravity_value[0] * np.sin(gravity_value[1]) * np.cos(gravity_value[2])
+            if abs(gravityX) <= 1e-8:
+                gravityX = 0.
+            gravityY = gravity_value[0] * np.sin(gravity_value[1]) * np.sin(gravity_value[2])
+            if abs(gravityY) <= 1e-8:
+                gravityY = 0.
+            self.gravityValue = gravityX * np.ones((2*Mesh.NumberOfElts,), float)
+            self.gravityValue[1:-1:2] = gravityY
 
         self.K1cFunc = K1c_func
         self.SigmaOFunc = confining_stress_func
@@ -271,7 +278,9 @@ class MaterialProperties:
             for i in range(mesh.NumberOfElts):
                 self.gravityValue[2*i:2*i+1] = self.gravityValueFunc(mesh.CenterCoor[i, 0], mesh.CenterCoor[i, 1])
         else:
-            self.gravityValue = np.full((2*mesh.NumberOfElts,), self.gravityValue[0])
+            gravityValueInt = np.full((mesh.NumberOfElts,), self.gravityValue[0])
+            gravityValueInt[1:-1:2] = self.gravityValue[1]
+            self.gravityValue = gravityValueInt
 
     # ------------------------------------------------------------------------------------------------------------------
 
