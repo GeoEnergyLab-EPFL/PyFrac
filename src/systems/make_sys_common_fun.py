@@ -65,7 +65,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, NeiElements, dx, dy, InCra
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
+def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, solidProp, simProp):
     """
     This function returns the gravity term (G in Zia and Lecampion 2019).
 
@@ -76,6 +76,7 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
         Mesh (CartesianMesh):       -- the mesh.
         InCrack (ndarray):          -- An array specifying whether elements are inside the fracture or not with
                                        1 or 0 respectively.
+        solidProp (object):         -- An object of the materialProperties class.
         simProp (object):           -- An object of the SimulationProperties class.
 
     Returns:
@@ -92,9 +93,9 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
             wLeftEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 0]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 0]]
             wRightEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 1]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 1]]
 
-            G[EltCrack] = -fluidProp.density * simProp.gravityValue[2 * EltCrack] * \
+            G[EltCrack] = -fluidProp.density * solidProp.gravityValue[2 * EltCrack] * \
                           (wLeftEdge ** 3 - wRightEdge ** 3) / mesh.hy / fluidProp.muPrime - \
-                          fluidProp.density * simProp.gravityValue[2 * EltCrack-1] * \
+                          fluidProp.density * solidProp.gravityValue[2 * EltCrack-1] * \
                           (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
         else:
             raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
