@@ -4,6 +4,7 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
+import argparse
 import numpy as np
 
 from mesh_obj.mesh import CartesianMesh
@@ -16,8 +17,14 @@ from fracture_obj.fracture_initialization import Geometry, InitializationParamet
 from controller import Controller
 from utilities.utility import setup_logging_to_console
 
-runQ = True
-plotQ = True
+parser = argparse.ArgumentParser()
+parser.add_argument("-r", "--runQ", type=bool, default=False)
+parser.add_argument("-p", "--plotQ", type=bool, default=True)
+parser.add_argument("-t", "--finaltime", type=int, default=50)
+args = parser.parse_args()
+
+runQ = args.runQ
+plotQ = args.plotQ
 dataPath = "./Data/gabbro7"
 
 
