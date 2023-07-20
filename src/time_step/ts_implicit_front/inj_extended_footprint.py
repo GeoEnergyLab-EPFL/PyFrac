@@ -603,7 +603,7 @@ def injection_extended_footprint(w_k, Fr_lstTmStp, C, Boundary, timeStep, Qin, m
     Fr_kplus1.TarrvlZrVrtx[Fr_kplus1.EltTip[new_tip]] = Fr_kplus1.time - Fr_kplus1.l[new_tip] / Fr_kplus1.v[new_tip]
     Fr_kplus1.wHist = np.maximum(Fr_kplus1.w, Fr_lstTmStp.wHist)
     Fr_kplus1.closed = data[1]
-    tip_neg_rib = np.asarray([], dtype=np.int)
+    tip_neg_rib = np.asarray([], dtype=int)
     # adding tip cells with closed corresponding ribbon cells to the list of closed cells
     for i, elem in enumerate(Fr_kplus1.EltTip):
         if corr_ribbon[i] in Fr_kplus1.closed and elem not in Fr_kplus1.closed:

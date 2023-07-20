@@ -204,7 +204,7 @@ class CartesianMesh:
         booleconnEdgesNodes = np.zeros([numberofedges, 1], dtype=int)
         connEdgesNodes = np.empty([numberofedges, 2], dtype=int)
         connElemEdges = np.empty([self.NumberOfElts, 4], dtype=int)
-        connEdgesElem = np.full([numberofedges, 2], np.nan, dtype=np.int)
+        connEdgesElem = np.full([numberofedges, 2], np.nan, dtype=int)
         connNodesEdges = np.full([self.NumberofNodes, 4], np.nan, dtype=int)
         connNodesElem = np.full([self.NumberofNodes, 4], np.nan, dtype=int)
         k = 0
