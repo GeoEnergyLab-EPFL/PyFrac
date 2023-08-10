@@ -21,10 +21,61 @@ from utilities.visualization import *
 
 SMALL_NUMBER = 1e-5
 
+
+class custom_factory:
+    def __init__(self, xlabel, ylabel):
+        self.number_of_plots = 1
+        self.data = {
+            "xlabel": xlabel,
+            "ylabel": ylabel,
+            "xdata": [],
+            "p_in_crack": [],
+            "p_in_line": [],
+        }  # max value of x that can be reached during the simulation
+
+    def custom_plot(self, plot_index, sim_prop, fig=None):
+        if plot_index - 1 not in range(self.number_of_plots):
+            print(
+                f"check the variable number_of_plots in the custom class! \n you asked plot {plot_index} but declared number_of_plots={self.number_of_plots}"
+            )
+        if plot_index == 1:
+            return self.plot_1(sim_prop, fig=fig)
+        else:
+            print(f" you did not code the plot function in the custom class ")
+
+    def plot_1(self, sim_prop, fig=None):
+        # this method is mandatory
+        if fig is None:
+            fig = plt.figure()
+            ax = fig.gca()
+        else:
+            ax = fig.get_axes()[0]
+
+        ax.scatter(self.data["xdata"], self.data["p_in_line"], color="b")
+        ax.scatter(self.data["xdata"], self.data["p_in_crack"], color="r", marker="*")
+
+        ax.set_xlabel(self.data["xlabel"])
+        ax.set_ylabel(self.data["ylabel"])
+        # ax.set_yscale('log')
+        # ax.set_xscale('log')
+        return fig
+
+    def postprocess_fracture(
+        self, sim_prop, solid_prop, fluid_prop, injection_prop, fr
+    ):
+        # this method is mandatory
+        self.data["xdata"].append(fr.time)
+        self.data["p_in_line"].append(fr.pInjLine / 1000000)
+        ID = fr.mesh.locate_element(0.0, 0.0)
+        self.data["p_in_crack"].append(fr.pFluid[ID[0]] / 1000000)  #
+        fr.postprocess_info = self.data
+        return fr
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--runQ", type=bool, default=False)
 parser.add_argument("-p", "--plotQ", type=bool, default=False)
-parser.add_argument("-t", "--finaltime", type=float, default=5)
+parser.add_argument("-t", "--finaltime", type=float, default=8)
 parser.add_argument("-j", "--jsonQ", type=bool, default=True)
 args = parser.parse_args()
 
@@ -37,23 +88,26 @@ dataPath = "./Data/gabbro7"
 setup_logging_to_console(verbosity_level="debug")
 
 if runQ:
-
     nu = poissonRatio = 0.29
     youngMod_Pa = 99.7e9
     youngModPlane_Pa = youngMod_Pa / (1 - poissonRatio**2)
-    toughness_PaSqrtMeters = 2.79e6  # Fracture toughness (Pa.m^1/2)
+    toughness_PaSqrtMeters = (2.79 + 0.11) * 1e6  # Fracture toughness (Pa.m^1/2)
     equivToughness_PaSqrtMeters = np.sqrt(32 / np.pi) * toughness_PaSqrtMeters
     cartersLeakoff_m3perSqrtS = 0.0
     confinementStress_Pa = 5e6
 
     # initialWidth_m = 1e-8
-    # initialNetPressure_Pa = 1e-5
+    initialNetPressure_Pa = 40e6 - confinementStress_Pa
     notchRadius_m = 10.5e-3
-    initialRadius_m = notchRadius_m
+    initialRadius_m = 1.12 * notchRadius_m
+    ### To force start at imminence of propagation
+    # initialRadius_m = (
+    #     np.pi * equivToughness_PaSqrtMeters / (8 * initialNetPressure_Pa * np.sqrt(2))
+    # ) ** 2
+    # initialNetPressure_Pa = (
+    #     np.pi * equivToughness_PaSqrtMeters / (8 * np.sqrt(2 * initialRadius_m))
+    # ) * 0.98
     mesh = CartesianMesh(Lx=initialRadius_m * 5, Ly=initialRadius_m * 5, nx=121, ny=121)
-    initialNetPressure_Pa = (
-        np.pi * equivToughness_PaSqrtMeters / (8 * np.sqrt(2 * initialRadius_m))
-    ) - SMALL_NUMBER
 
     solid = MaterialProperties(
         Mesh=mesh,
@@ -73,17 +127,58 @@ if runQ:
     if type(Qo) == list:
         injectionRate_m3PerSec = np.asarray([t_change, Qo])
 
-    injection = InjectionProperties(rate=injectionRate_m3PerSec, mesh=mesh)
+    lumpedCompressibility_m3perPa = 62.83 * 1e-6 * 1e-9
+    injection = InjectionProperties(
+        rate=injectionRate_m3PerSec,
+        mesh=mesh,
+        model_inj_line=True,
+        il_compressibility=lumpedCompressibility_m3perPa,
+        il_volume=1,
+        perforation_friction=0,
+        initial_pressure=initialNetPressure_Pa,
+    )
 
     viscosity = 0.6
-    fluid = FluidProperties(viscosity=viscosity, compressibility=0.0)
+    fluidCompressibility_1perPa = 0
+    fluid = FluidProperties(
+        viscosity=viscosity, compressibility=fluidCompressibility_1perPa
+    )
 
     simulation = SimulationProperties()
     simulation.finalTime = args.finaltime  # Seconds
     # simulation.saveTSJump, simulation.plotTSJump = 1, 20
     simulation.set_outputFolder(dataPath)
     # simulation.frontAdvancing = "explicit"
+    simulation.customPlotsOnTheFly = True
+    simulation.custom = custom_factory("time [s]", "pressure [MPa]")
+    simulation.plotVar = ["ir", "pf", "custom"]
+    simulation.plotFigure = True
     simulation.projMethod = "LS_continousfront"
+    my_fixed_ts = np.asarray(
+        [
+            [0.0, 10, 90, 100, 106, 120],
+            [10, 30, 5, 2, 0.2, 1],
+        ]
+    )
+    simulation.fixedTmStp = my_fixed_ts
+    # simulation.set_solTimeSeries(
+    #     np.asarray(
+    #         [
+    #             2.1,
+    #             2.2,
+    #             2.25,
+    #             2.3,
+    #             2.4,
+    #             2.5756,
+    #             2.85539,
+    #             3.8,
+    #             4.9,
+    #             6.2,
+    #             7.7,
+    #             8.0,
+    #         ]
+    #     )
+    # )
 
     # starting gfrom a prexisting fracture with net pressure specified and opening from elasticity
     from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
@@ -270,7 +365,7 @@ if jsonQ:
     # 3) export the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
     if 3 in to_export:
         print("\n 3) get w(t) at a point... ")
-        my_X = 0.005
+        my_X = 0.0
         my_Y = 0.0
         w_at_my_point, time_list_at_my_point = get_fracture_variable_at_point(
             Fr_list, variable="w", point=[[my_X, my_Y]]
@@ -310,7 +405,7 @@ if jsonQ:
         print(
             "\n 5) get w(y) with y passing through a specific point for different times... "
         )
-        my_X = 0.005
+        my_X = 0.0
         my_Y = 0.0
         ext_pnts = np.empty((2, 2), dtype=np.float64)
         fracture_list_slice = plot_fracture_list_slice(
@@ -333,7 +428,7 @@ if jsonQ:
         print(
             "\n 6) get pf(x) with x passing through a specific point for different times... "
         )
-        my_X = 0.005
+        my_X = 0.0
         my_Y = 0.0
         ext_pnts = np.empty((2, 2), dtype=np.float64)
         fracture_list_slice = plot_fracture_list_slice(
