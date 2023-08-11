@@ -146,21 +146,37 @@ if runQ:
     )
 
     simulation = SimulationProperties()
-    simulation.finalTime = args.finaltime  # Seconds
+    simulation.finalTime = args.finaltime*1.02  # Seconds
     # simulation.saveTSJump, simulation.plotTSJump = 1, 20
     simulation.set_outputFolder(dataPath)
     # simulation.frontAdvancing = "explicit"
     simulation.customPlotsOnTheFly = True
     simulation.custom = custom_factory("time [s]", "pressure [MPa]")
-    simulation.plotVar = ["ir", "pf", "custom"]
+    simulation.plotVar = ["w", "pf", "custom"]
     simulation.plotFigure = True
     simulation.projMethod = "LS_continousfront"
+
+    # Custom timesteps
+    tMarks_percentage = np.asarray([1,80,95,98,100,102])/100
+    tMarks = args.finaltime * tMarks_percentage
+    npoints = np.asarray([2]*(len(tMarks)-1))
+    npoints[-2] = 4
+    npoints[-1] = 8
+    dts = np.append(np.diff(tMarks)/npoints,None)
+    tMarks[0] = 0
+    # dts = np.append(np.diff(tMarks)/2,0.5)
     my_fixed_ts = np.asarray(
         [
-            [0.0, 10, 90, 100, 106, 120],
-            [10, 30, 5, 2, 0.2, 1],
+            tMarks,
+            dts,
         ]
     )
+    # my_fixed_ts = np.asarray(
+    #     [
+    #         [0.0, 130, 150, 160, 164, 166],
+    #         [30,  10, 5, 2, 0.5, 1],
+    #     ]
+    # )
     simulation.fixedTmStp = my_fixed_ts
     # simulation.set_solTimeSeries(
     #     np.asarray(
