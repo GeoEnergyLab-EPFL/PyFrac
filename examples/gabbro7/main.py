@@ -75,7 +75,7 @@ class custom_factory:
 parser = argparse.ArgumentParser()
 parser.add_argument("-r", "--runQ", type=bool, default=False)
 parser.add_argument("-p", "--plotQ", type=bool, default=False)
-parser.add_argument("-t", "--finaltime", type=float, default=8)
+parser.add_argument("-t", "--finaltime", type=float, default=180)
 parser.add_argument("-j", "--jsonQ", type=bool, default=True)
 args = parser.parse_args()
 
@@ -128,6 +128,7 @@ if runQ:
         injectionRate_m3PerSec = np.asarray([t_change, Qo])
 
     lumpedCompressibility_m3perPa = 62.83 * 1e-6 * 1e-9
+    initialFluidP = initialNetPressure_Pa + confinementStress_Pa
     injection = InjectionProperties(
         rate=injectionRate_m3PerSec,
         mesh=mesh,
@@ -135,7 +136,7 @@ if runQ:
         il_compressibility=lumpedCompressibility_m3perPa,
         il_volume=1,
         perforation_friction=0,
-        initial_pressure=initialNetPressure_Pa,
+        initial_pressure=initialFluidP,
     )
 
     viscosity = 0.6
@@ -208,6 +209,7 @@ if runQ:
         net_pressure=initialNetPressure_Pa,
         # width=initialWidth_m,
         elasticity_matrix=elasticityMatrix,
+        time=1,
     )
 
     fracture = Fracture(
