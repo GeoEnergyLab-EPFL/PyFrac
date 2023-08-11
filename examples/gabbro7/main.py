@@ -101,9 +101,9 @@ if runQ:
     notchRadius_m = 10.5e-3
     initialRadius_m = 1.12 * notchRadius_m
     ### To force start at imminence of propagation
-    # initialRadius_m = (
-    #     np.pi * equivToughness_PaSqrtMeters / (8 * initialNetPressure_Pa * np.sqrt(2))
-    # ) ** 2
+    initialRadius_m = (
+        np.pi * equivToughness_PaSqrtMeters / (8 * initialNetPressure_Pa * np.sqrt(2))
+    ) ** 2
     # initialNetPressure_Pa = (
     #     np.pi * equivToughness_PaSqrtMeters / (8 * np.sqrt(2 * initialRadius_m))
     # ) * 0.98
