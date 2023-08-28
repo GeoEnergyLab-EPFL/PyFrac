@@ -448,6 +448,37 @@ if jsonQ:
         )
         print(" <-- DONE\n")
 
+    if 8 in to_export:
+        print("\n 8) get flow rate entering the fracture")
+        flowRateIn = get_fracture_variable(Fr_list, variable="tir")
+        flowRateIn[0] = flowRateIn[1]
+        append_to_json_file(
+            myJsonName_1, flowRateIn, "append2keyASnewlist", key="flowRateIn"
+        )
+        print(" <-- DONE\n")
+
+    if 9 in to_export:
+        print("\n 9) get Q_in(t) at a point... ")
+        my_X = 0.0
+        my_Y = 0.0
+        Qin_at_my_point, time_list_at_my_point = get_fracture_variable_at_point(
+            Fr_list, variable="ir", point=[[my_X, my_Y]]
+        )
+        Qin_at_my_point[0] = Qin_at_my_point[1]
+        append_to_json_file(
+            myJsonName_1,
+            Qin_at_my_point,
+            "append2keyASnewlist",
+            key="Qin_at_my_point_A",
+        )
+        append_to_json_file(
+            myJsonName_1,
+            time_list_at_my_point,
+            "append2keyASnewlist",
+            key="time_list_Qin_at_my_point_A",
+        )
+        print(" <-- DONE\n")
+
     subprocess.run(["cp", myJsonName_1, "./Data/latest_exported_simulation.json"])
     print("DONE! in " + myJsonName_1)
 
