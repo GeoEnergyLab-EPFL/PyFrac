@@ -462,3 +462,39 @@ if jsonQ:
 
     subprocess.run(["cp", myJsonName_1, "./Data/latest_exported_simulation.json"])
     print("DONE! in " + myJsonName_1)
+
+if plotQ:
+    # loading simulation results
+    time_srs = get_fracture_variable(Fr_list, variable="time")  # list of times
+
+    # plot fracture radius
+    plot_prop = PlotProperties()
+    plot_prop.lineStyle = "."  # setting the line style to point
+    # plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    Fig_R = plot_fracture_list_at_point(Fr_list, variable="pf", plot_prop=plot_prop)
+    Fig_R = plot_fracture_list_at_point(
+        Fr_list, variable="pn", plot_prop=plot_prop, fig=Fig_R
+    )
+    # Fig_R = plot_fracture_list_at_point(Fr_list,
+    #                            variable='ir',
+    #                            plot_prop=plot_prop)
+    # Fig_R = plot_fracture_list_at_point(Fr_list,
+    #                            variable='tir',
+    #                            plot_prop=plot_prop)
+    # plot analytical radius
+    # Fig_R = plot_analytical_solution(regime='M',
+    #                                  variable='d_mean',
+    #                                  mat_prop=solid,
+    #                                  inj_prop=injection,
+    #                                  fluid_prop=fluid,
+    #                                  time_srs=time_srs,
+    #                                  fig=Fig_R)
+    # plot analytical radius
+    # Fig_R = plot_analytical_solution(regime='K',
+    #                                  variable='d_mean',
+    #                                  mat_prop=solid,
+    #                                  inj_prop=injection,
+    #                                  fluid_prop=fluid,
+    #                                  time_srs=time_srs,
+    #                                  fig=Fig_R)
+    plt.show(block=True)
