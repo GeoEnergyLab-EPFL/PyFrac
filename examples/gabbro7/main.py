@@ -18,6 +18,12 @@ from fracture_obj.fracture_initialization import Geometry, InitializationParamet
 from controller import Controller
 from utilities.utility import setup_logging_to_console
 from utilities.visualization import *
+from utilities.postprocess_fracture import load_fractures
+
+# import pandas as pd
+# experimentPressure_MPa = pd.read_csv("/home/pedro/projects/gabbro7/experiment-data/RawData/175323.csv").loc[:," P1"]
+# dtExp_sec = 0.2
+# experimentTime_sec = [dtExp]
 
 SMALL_NUMBER = 1e-5
 
@@ -220,14 +226,6 @@ if runQ:
     )
 
     Fr_geometry = Geometry("radial", radius=initialRadius_m)
-    # init_param = InitializationParameters(Fr_geometry,
-    #                                     regime='static',
-    #                                     net_pressure=1e3,
-    #                                     elasticity_matrix=C)
-    # ---------------------------------
-
-    # starting gfrom a prexisting fracture with min opening specified
-    # initialState = InitializationParameters(Geometry("radial", radius=initialRadius_m))
     initialState = InitializationParameters(
         Fr_geometry,
         regime="static",
@@ -354,20 +352,10 @@ if jsonQ:
 
     # 3) export the fracture opening w(t) versus time (t) at a point of coordinates myX and myY
     if 3 in to_export:
-        print("\n 3) get w(t) at a point... ")
-        my_X = 0.0
-        my_Y = 0.0
-        w_at_my_point, time_list_at_my_point = get_fracture_variable_at_point(
-            Fr_list, variable="w", point=[[my_X, my_Y]]
-        )
+        print("\n 3) get fracture radius... ")
+        radius = get_fracture_variable(Fr_list, variable="d_mean")
         append_to_json_file(
-            myJsonName_1, w_at_my_point, "append2keyASnewlist", key="w_at_my_point"
-        )
-        append_to_json_file(
-            myJsonName_1,
-            time_list_at_my_point,
-            "append2keyASnewlist",
-            key="time_list_W_at_my_point",
+            myJsonName_1, radius, "append2keyASnewlist", key="fractureRadius"
         )
         print(" <-- DONE\n")
 
