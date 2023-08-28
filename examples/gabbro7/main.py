@@ -99,15 +99,21 @@ if runQ:
     # initialWidth_m = 1e-8
     initialNetPressure_Pa = 40e6 - confinementStress_Pa
     notchRadius_m = 10.5e-3
-    initialRadius_m = 1.12 * notchRadius_m
+    # initialRadius_m = 1.12 * notchRadius_m
     ### To force start at imminence of propagation
     initialRadius_m = (
-        np.pi * equivToughness_PaSqrtMeters / (8 * initialNetPressure_Pa * np.sqrt(2))
-    ) ** 2
+        1.06
+        * (
+            np.pi
+            * equivToughness_PaSqrtMeters
+            / (8 * initialNetPressure_Pa * np.sqrt(2))
+        )
+        ** 2
+    )
     # initialNetPressure_Pa = (
     #     np.pi * equivToughness_PaSqrtMeters / (8 * np.sqrt(2 * initialRadius_m))
     # ) * 0.98
-    mesh = CartesianMesh(Lx=initialRadius_m * 5, Ly=initialRadius_m * 5, nx=121, ny=121)
+    mesh = CartesianMesh(Lx=initialRadius_m * 5, Ly=initialRadius_m * 5, nx=61, ny=61)
 
     solid = MaterialProperties(
         Mesh=mesh,
@@ -127,7 +133,8 @@ if runQ:
     if type(Qo) == list:
         injectionRate_m3PerSec = np.asarray([t_change, Qo])
 
-    lumpedCompressibility_m3perPa = 62.83 * 1e-6 * 1e-9
+    #                                   mL/MPa     m3/mL  MPa/Pa
+    lumpedCompressibility_m3perPa = 6.29e-2 * 1e-6 * 1e-6
     initialFluidP = initialNetPressure_Pa + confinementStress_Pa
     injection = InjectionProperties(
         rate=injectionRate_m3PerSec,
@@ -146,7 +153,6 @@ if runQ:
     )
 
     simulation = SimulationProperties()
-    simulation.finalTime = args.finaltime*1.02  # Seconds
     # simulation.saveTSJump, simulation.plotTSJump = 1, 20
     simulation.set_outputFolder(dataPath)
     # simulation.frontAdvancing = "explicit"
@@ -157,12 +163,15 @@ if runQ:
     simulation.projMethod = "LS_continousfront"
 
     # Custom timesteps
-    tMarks_percentage = np.asarray([1,80,95,98,100,102])/100
+    simulation.finalTime = 1.30 * args.finaltime  # Seconds
+    tMarks_percentage = np.asarray([1, 80, 95, 98, 100, 104, 110]) / 100
     tMarks = args.finaltime * tMarks_percentage
-    npoints = np.asarray([2]*(len(tMarks)-1))
-    npoints[-2] = 4
-    npoints[-1] = 8
-    dts = np.append(np.diff(tMarks)/npoints,None)
+    npoints = np.asarray([2] * (len(tMarks) - 1))
+    npoints[-3] = 4
+    npoints[-2] = 12
+    npoints[-1] = 1
+    dts = np.append(np.diff(tMarks) / npoints, 1.0)
+    dts[-2] = 0.75
     tMarks[0] = 0
     # dts = np.append(np.diff(tMarks)/2,0.5)
     my_fixed_ts = np.asarray(
@@ -256,43 +265,6 @@ if args.plotQ or args.jsonQ:
     solid, fluid, injection, simulation = properties
 
 
-if plotQ:
-    # loading simulation results
-    time_srs = get_fracture_variable(Fr_list, variable="time")  # list of times
-
-    # plot fracture radius
-    plot_prop = PlotProperties()
-    plot_prop.lineStyle = "."  # setting the line style to point
-    # plot_prop.graphScaling = 'loglog'       # setting to log log plot
-    Fig_R = plot_fracture_list_at_point(Fr_list, variable="pf", plot_prop=plot_prop)
-    Fig_R = plot_fracture_list_at_point(
-        Fr_list, variable="pn", plot_prop=plot_prop, fig=Fig_R
-    )
-    # Fig_R = plot_fracture_list_at_point(Fr_list,
-    #                            variable='ir',
-    #                            plot_prop=plot_prop)
-    # Fig_R = plot_fracture_list_at_point(Fr_list,
-    #                            variable='tir',
-    #                            plot_prop=plot_prop)
-    # plot analytical radius
-    # Fig_R = plot_analytical_solution(regime='M',
-    #                                  variable='d_mean',
-    #                                  mat_prop=solid,
-    #                                  inj_prop=injection,
-    #                                  fluid_prop=fluid,
-    #                                  time_srs=time_srs,
-    #                                  fig=Fig_R)
-    # plot analytical radius
-    # Fig_R = plot_analytical_solution(regime='K',
-    #                                  variable='d_mean',
-    #                                  mat_prop=solid,
-    #                                  inj_prop=injection,
-    #                                  fluid_prop=fluid,
-    #                                  time_srs=time_srs,
-    #                                  fig=Fig_R)
-    plt.show(block=True)
-
-
 # -------------- exporting to json file -------------- #
 
 
@@ -304,13 +276,13 @@ if plotQ:
 # # 6) export pf(x) along a horizontal line passing through mypoint for different times
 # # 7) export w(x,y,t) and pf(x,y,t)
 
-to_export = [1, 2, 3, 4, 5, 6, 7]
+to_export = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 jsonQ = args.jsonQ
 if jsonQ:
     from utilities.postprocess_fracture import append_to_json_file
 
-    sim_name = simulation.get_simulation_name()
-    # sim_name = "simulation__2023-07-21__16_44_14"
+    # sim_name = simulation.get_simulation_name()
+    sim_name = "simulation__2023-08-15__18_15_55"
     # decide the names of the Json files:
     myJsonName_1 = "./Data/Pyfrac_" + sim_name + "_export.json"
 
