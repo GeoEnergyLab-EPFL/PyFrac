@@ -703,7 +703,7 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack):
+def pressure_gradient_form_pressure(pf, Mesh, EltCrack, InCrack):
     """
     This function gives the pressure gradient at the cell edges evaluated with the pressure
     """
@@ -789,43 +789,51 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
 
             # we add the gravity term for fluid flux
             fluid_flux[0, :] = fluid_flux[-1, :] +\
-                                (-wLftEdge ** 3 / muPrime * (rhoLftEdge - density) *
-                                 solid.gravityValue[2 * EltCrack - 1])
-            fluid_flux[1, :] = fluid_flux[-2, :] +\
-                                (-wRgtEdge ** 3 / muPrime * (rhoRgtEdge - density) *
-                                 solid.gravityValue[2 * EltCrack - 1])
-            fluid_flux[2, :] = fluid_flux[-2, :] +\
-                                (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) *
-                                 solid.gravityValue[2 * EltCrack])
+                                (-wLftEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack - 1])
+            # (rhoLftEdge - density) *
+            fluid_flux[1, :] = fluid_flux[-2, :] + \
+                               (-wRgtEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack - 1])
+            #(rhoRgtEdge - density) *
+            fluid_flux[2, :] = fluid_flux[-2, :] + \
+                               (-wBtmEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack])
+            # (rhoBtmEdge - density) *
             fluid_flux[3, :] = fluid_flux[-1, :] +\
-                                (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) *
-                                 solid.gravityValue[2 * EltCrack])
+                                (-wTopEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack])
+            # (rhoTopEdge - density) *
 
             # we add the gravity term for the fluid flux components.
             fluid_flux_components[0, :] = fluid_flux_components[0, :] +\
-                                          (-wLftEdge ** 3 / muPrime * (rhoLftEdge - density) *
+                                          (-wLftEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack - 1])
+            # (rhoLftEdge - density) *
             fluid_flux_components[1, :] = fluid_flux_components[1, :] +\
-                                          (-wLftEdge ** 3 / muPrime * (rhoLftEdge - density) *
+                                          (-wLftEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack])
+            # (rhoLftEdge - density) *
             fluid_flux_components[2, :] = fluid_flux_components[2, :] +\
-                                          (-wRgtEdge ** 3 / muPrime * (rhoRgtEdge - density) *
+                                          (-wRgtEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack - 1])
+            # (rhoRgtEdge - density) *
             fluid_flux_components[3, :] = fluid_flux_components[3, :] +\
-                                          (-wRgtEdge ** 3 / muPrime * (rhoRgtEdge - density) *
+                                          (-wRgtEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack])
+            # (rhoRgtEdge - density) *
             fluid_flux_components[4, :] = fluid_flux_components[4, :] +\
-                                          (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) *
+                                          (-wBtmEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack - 1])
+            # (rhoBtmEdge - density) *
             fluid_flux_components[5, :] = fluid_flux_components[5, :] +\
-                                          (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) *
+                                          (-wBtmEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack])
+            # (rhoBtmEdge - density) *
             fluid_flux_components[6, :] = fluid_flux_components[6, :] +\
-                                          (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) *
+                                          (-wTopEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack - 1])
+            # (rhoTopEdge - density) *
             fluid_flux_components[7, :] = fluid_flux_components[7, :] +\
-                                          (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) *
+                                          (-wTopEdge ** 3 / muPrime * density *
                                            solid.gravityValue[2 * EltCrack])
+            # (rhoTopEdge - density) *
 
         fluid_vel = copy.deepcopy(fluid_flux)
         wEdges = [wLftEdge, wRgtEdge, wBtmEdge, wTopEdge]
