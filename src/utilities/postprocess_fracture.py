@@ -1933,7 +1933,7 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
         Rey_num, \
         fluid_flux_components, \
         fluid_vel_components = calculate_fluid_flow_characteristics_laminar(i.w,
-                                                                            i.pNet,
+                                                                            i.pFluid,
                                                                             Solid.SigmaO,
                                                                             fr_mesh,
                                                                             i.EltCrack,
@@ -2071,7 +2071,7 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
 
     # * -- For back compatibility, we check if the fracture properties have a stored gravity Value -- * #
     if not hasattr(Solid, 'gravityValue'):
-        Solid.gravityValue = np.zeros((2 * len(Solid.Sigma0),), float)
+        Solid.gravityValue = np.zeros((2 * len(Solid.SigmaO),), float)
         Solid.gravityValue[1:-1:2] = -9.81
 
     # * -- For back compatibility, we check if the fracture properties have a stored density -- * #
@@ -2149,19 +2149,29 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
 
             if head_split == None:
                 cells = [np.arange(fr_i_mesh.NumberOfElts)]
+            elif np.max(np.hstack((fr_i.Ffront[::, 1], fr_i.Ffront[::, 3]))) - head_split['lhead'][iter] <= \
+                    head_split['dbmax'][iter]:
+                head_cells = np.where(fr_i_mesh.CenterCoor[:, 1] >= np.max(y) - head_split['lhead'][iter])[0]
+                cells = [np.arange(fr_i_mesh.NumberOfElts), head_cells,
+                         np.setdiff1d(np.arange(fr_i_mesh.NumberOfElts), head_cells)]
             else:
-                head_cells = np.where(fr_i_mesh.CenterCoor[:, 1] >= max(y) - head_split['lhead'][iter])[0]
-                cells = [head_cells, np.setdiff1d(np.arange(fr_i_mesh.NumberOfElts), head_cells)]
+                cells = [np.arange(fr_i_mesh.NumberOfElts)]
 
             # - Calculate the various powers - #
-            Viscous_P[iter] = get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, cells)
+            Viscous_P[iter] = get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, l, x_m, y_m, x, y, cells)
             Fracture_P[iter] = get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y, cells)
             Elastic_P[iter] = get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pNet, fr_im1.pNet, cells)
-            Elastic_Stress_P[iter] = 2 * get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pFluid-fr_i.pNet,
-                                                  fr_im1.pFluid-fr_im1.pNet, cells)
+            Elastic_Stress_P_Int = 2 * get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pFluid-fr_i.pNet,
+                                                        fr_im1.pFluid-fr_im1.pNet, cells)
             External_P[iter] = get_External_P(fr_im1, fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells)
             LeakOff_P[iter] = get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells)
-            Internal_P[iter] = Viscous_P[iter]+Fracture_P[iter]+Elastic_P[iter]+Elastic_Stress_P[iter] + LeakOff_P[iter]
+            Elastic_Stress_P[iter] = [Elastic_Stress_P_Int[0]]
+            Internal_P[iter] = [Viscous_P[iter][0] + Fracture_P[iter][0] + Elastic_P[iter][0] +
+                                Elastic_Stress_P[iter][0] + LeakOff_P[iter][0]]
+            for i in range(len(cells) - 1):
+                Elastic_Stress_P[iter] += [Elastic_Stress_P_Int[i + 1]]
+                Internal_P[iter] += [Viscous_P[iter][i + 1] + Fracture_P[iter][i + 1] + Elastic_P[iter][i + 1] +
+                                     Elastic_Stress_P[iter][i + 1] + LeakOff_P[iter][i + 1]]
 
             # - Store the time and mark the next iteration - #
             power_time_steps[iter] = fr_i.time
@@ -2173,7 +2183,7 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, cells):
+def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, l, x_m, y_m, x, y, cells):
     """This function calculates the power dissipated by viscous flow in the fracture
 
     :param fr_i: Fracture object of the current time step - see related documentation
@@ -2187,6 +2197,8 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, cells):
              dissipated by viscous flow for this time-step
     """
 
+    from level_set.continuous_front_reconstruction import findangle
+
     # * -- Export some required values -- * #
     viscosity = Fluid.viscosity             # the viscosity of the fluid
     cell_area = fr_i_mesh.hx * fr_i_mesh.hy # the surface of one cell (regular grid)
@@ -2196,7 +2208,7 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, cells):
     fluid_vel_list, waste = get_velocity_as_vector(Solid, Fluid, [fr_i], SimProp) # the fluid flow velocity of the cells
     fluid_vel = fluid_vel_list[0]
 
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         # - Initiate the required information - #
@@ -2213,18 +2225,51 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, cells):
             if w[crack_ind] == 0.:
                 Viscous_P_vec[i] = 0.
             elif not ID in fr_i.EltTip:
-                sqVx[i] = (fluid_vel[0, crack_ind]**2 + fluid_vel[2, crack_ind]**2 + fluid_vel[4, crack_ind]**2 +
-                           fluid_vel[6, crack_ind]**2)/4.
-                sqVy[i] = (fluid_vel[1, crack_ind]**2 + fluid_vel[3, crack_ind]**2 + fluid_vel[5, crack_ind]**2 +
-                           fluid_vel[7, crack_ind]**2)/4.
-                sqV[i] = sqVx[i] + sqVy[i]
-                Viscous_P_vec[i] = sqV[i]/w[i]
+                for nei, neiID in enumerate(fr_i_mesh.NeiElements[ID]):
+                    if neiID not in fr_i.EltTip:
+                        sqVx[i] += fluid_vel[2 * nei - 1, crack_ind]**2
+                        sqVy[i] += fluid_vel[2 * nei, crack_ind]**2
+                    else:
+                        tip_ind = np.where(fr_i.EltTip == neiID)[0][0]  # tip index
+                        coord_zero_vertex = fr_i_mesh.VertexCoor[fr_i_mesh.Connectivity[neiID][fr_i.ZeroVertex[tip_ind]]]
+                        [alpha, xint, yint] = findangle(x[tip_ind][0], y[tip_ind][0], x[tip_ind][1], y[tip_ind][1],
+                                                        coord_zero_vertex[0], coord_zero_vertex[1],
+                                                        100 * np.sqrt(np.finfo(float).eps))
+                        normal_x = xint - coord_zero_vertex[0]
+                        normal_y = yint - coord_zero_vertex[1]
+                        normal_x = normal_x / np.sqrt(normal_x ** 2 + normal_y ** 2)
+                        normal_y = normal_y / np.sqrt(normal_x ** 2 + normal_y ** 2)
+                        if normal_y == 0:
+                            angle = np.pi / 2
+                        else:
+                            angle = np.tan(normal_x / normal_y)
+                        sqVx[i] += np.cos(angle) * fr_i.v[tip_ind] ** 2
+                        sqVy[i] += np.sin(angle) * fr_i.v[tip_ind] ** 2
+
+                sqV[i] = sqVx[i]/4 + sqVy[i]/4
+                Viscous_P_vec[i] = sqV[i]/w[crack_ind]
             else:
-                tip_ind = np.where(fr_i.EltTip==ID)[0]
+                tip_ind = np.where(fr_i.EltTip == ID)[0][0]
                 Viscous_P_vec[i] = fr_i.FillF[tip_ind]*fr_i.v[tip_ind]**2 / w[crack_ind]
 
         # * -- Calculate the final viscous dissipation -- * #
-        output = [output, cell_area * 12 * viscosity * np.sum(Viscous_P_vec)]
+        output[split] = cell_area * 12 * viscosity * np.sum(Viscous_P_vec)
+
+        # from utilities.utility import plot_as_matrix
+        # K = np.ones((fr_i_mesh.NumberOfElts,), ) * 1e2
+        # K[fr_i.EltCrack] = Viscous_P_vec * cell_area * 12 * viscosity
+        # # K[fr_i.EltTip] = 50
+        # plot_as_matrix(K, fr_i_mesh)
+
+        # tipsum = 0.
+        # restsum = 0.
+        # for i in range(nEltCrack):
+        #     if common_cells[i] in fr_i.EltTip:
+        #         tipsum += cell_area * 12 * viscosity * Viscous_P_vec[i]
+        #     else:
+        #         restsum += cell_area * 12 * viscosity * Viscous_P_vec[i]
+        # print(tipsum)
+        # print(restsum)
 
     return output
 
@@ -2388,7 +2433,7 @@ def get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y, cells):
     except:
         Toughness_function = False
 
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         common_cells = np.intersect1d(fr_i.EltTip, cells[split])
@@ -2426,7 +2471,7 @@ def get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y, cells):
                     Fracture_P_vec[i] = l[tip_ind] * fr_i.v[tip_ind] * KIc**2/Solid.Eprime
             else:
                 print("Not implemented for heterogenous toughness defined without a function")
-        output = [output, np.sum(Fracture_P_vec)]
+        output[split] = np.sum(Fracture_P_vec)
 
     # * -- Export the total dissipated power -- * #
     return output
@@ -2451,7 +2496,7 @@ def get_Elastic_P(fr_im1, fr_i, fr_i_mesh, traction_i, traction_im1, cells):
     w = fr_i.w[fr_i.EltCrack]                   # the opening of the cells in the crack
     nEltCrack=fr_i.EltCrack.size                # the number of elements in the crack
 
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         common_cells = np.intersect1d(fr_i.EltCrack, cells[split])
@@ -2473,9 +2518,9 @@ def get_Elastic_P(fr_im1, fr_i, fr_i_mesh, traction_i, traction_im1, cells):
                                                                     traction_im1[ID]*w_old)/dt
 
             # * -- Export the total dissipated power -- * #
-            output = [output, cell_area * np.sum(Elastic_P_vec)]
+            output[split] = cell_area * np.sum(Elastic_P_vec)
         else:
-            output = [output, 0]
+            output[split] = 0.
     return output
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2498,8 +2543,13 @@ def get_External_P(fr_im1, fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
     # * -- The external energy is composed of a gravity component and the injection -- * #
     # - Switch in function of activated gravity - #
     if SimProp.gravity:
-        return get_External_injection(fr_im1, fr_i, cells) + \
-               get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells)
+        ext_inj = get_External_injection(fr_im1, fr_i, cells)
+        ext_gravi = get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells)
+        output = [ext_inj[0] + ext_gravi[0]]
+        for i in range(len(cells) - 1):
+            output = [ext_inj[i] + ext_gravi[i]]
+        return output
+
     else:
         return get_External_injection(fr_im1, fr_i, cells)
 
@@ -2516,15 +2566,15 @@ def get_External_injection(fr_im1, fr_i, cells):
 
     # * -- The external power added by injection is given by the net pressure times the injection rate -- * #
     #ToDo: to be generalized
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         if len(fr_i.source) != 0 and (fr_i.time - fr_im1.time) != 0. and len(np.intersect1d(fr_i.source[0],
                                                                                             cells[split])):
-            output = [output, fr_i.pFluid[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) /
-                      (fr_i.time - fr_im1.time)]
+            output[split] = fr_i.pFluid[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) / \
+                            (fr_i.time - fr_im1.time)
         else:
-            output = [output, 0.]
+            output[split] = 0.
 
     return output
 
@@ -2557,7 +2607,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
     fluid_vel_list, waste = get_velocity_as_vector(Solid, Fluid, [fr_i], SimProp)
     fluid_vel = fluid_vel_list[0]
 
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         common_cells = np.intersect1d(fr_i.EltCrack, cells[split])
@@ -2574,14 +2624,13 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
             # - Switch if a tip element is encountered - #
             if not ID in fr_i.EltTip:
                 # - We average only the velocities in the buoyant direction as those will give the main contribution - #
-                Vy[i] = (fluid_vel[5, crack_ind] + fluid_vel[7, crack_indi]) / 2.
+                Vy[i] = (fluid_vel[5, crack_ind] + fluid_vel[7, crack_ind]) / 2.
                 Vx[i] = (fluid_vel[0, crack_ind] + fluid_vel[2, crack_ind]) / 2.
                 # - The external power is velocity * opening * flui density * gravitational acceleration - #
                 External_p_gravity_vec[i] = Vy[i] * w[crack_ind] * rho_f * gravity[2 * ID - 1] + \
                                             Vx[i] * w[crack_ind] * rho_f * gravity[2 * ID]
             else:
                 # - For tip elements the normal of the propagation direction is. - #
-                # Note: Dissipation is then calculated assuming g in -y
                 tip_ind = np.where(fr_i.EltTip==ID)[0][0]
                 # - The following is to calculate the normal - #
                 coord_zero_vertex = fr_i_mesh.VertexCoor[fr_i_mesh.Connectivity[ID][fr_i.ZeroVertex[tip_ind]]]
@@ -2596,11 +2645,11 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
                 else:
                     normal_y = 0.
                     normal_x = 0.
-                # - We ultiply the fracture velocity (= fluid velocity) by the normal in y as we assume g in -y - #
+                # - We multiply the fracture velocity (= fluid velocity) by the normal in y as we assume g in -y - #
                 External_p_gravity_vec[i] = fr_i.FillF[tip_ind] * w[crack_ind] * rho_f * np.abs(fr_i.v[tip_ind]) * \
                                             (normal_y * gravity[2 * ID - 1] + normal_x * gravity[2 * ID])
 
-        output = [output, cell_area * np.sum(External_p_gravity_vec)]
+        output[split] = cell_area * np.sum(External_p_gravity_vec)
 
     # * -- Export the total dissipated power by multiplying with the uniform cell_area -- * #
     return output
@@ -2620,7 +2669,7 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells):
 
     # * -- Check if we do not have a zero leak-off case -- * #
     dt = np.abs(fr_i.time - fr_im1.time) # the time step
-    output = []
+    output = [0.] * len(cells)
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         if sum(Solid.Cprime) != 0 and dt != 0.:
@@ -2653,9 +2702,9 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells):
                     leakOff_P_vec[i] = fr_i.FillF[tip_ind] * v_lkOff * pf_avg
 
             # * -- Export the total dissipated power -- * #
-            routput = [output, cell_area * np.sum(leakOff_P_vec)]
+            output[split] = cell_area * np.sum(leakOff_P_vec)
         else:
             # - If no leak-off is there the dissipated power is simply zero - #
-            output = [output, 0.]
+            output[split] = 0.
 
     return output
