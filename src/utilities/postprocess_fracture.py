@@ -2440,6 +2440,8 @@ def get_Fracture_P(fr_i, Solid, l, x_m, y_m, x, y, cells):
     # Note: 1) Not yet for TI material.
     #       2) could be improved by having "get_l_Ffront_ordered_as_v" faster
 
+    from level_set.continuous_front_reconstruction import findangle
+
     # * -- Initialize the solution and administrative parameters -- * #
     Toughness_function = True
 
