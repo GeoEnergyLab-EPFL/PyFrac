@@ -95,7 +95,7 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, solidProp, simProp):
 
             G[EltCrack] = -fluidProp.density * solidProp.gravityValue[2 * EltCrack] * \
                           (wLeftEdge ** 3 - wRightEdge ** 3) / mesh.hy / fluidProp.muPrime - \
-                          fluidProp.density * solidProp.gravityValue[2 * EltCrack-1] * \
+                          fluidProp.density * solidProp.gravityValue[2 * EltCrack - 1] * \
                           (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
         else:
             raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
