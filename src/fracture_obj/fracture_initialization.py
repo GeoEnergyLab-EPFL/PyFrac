@@ -1459,7 +1459,7 @@ def get_survey_points(geometry, mesh, source_coord=None):
     if geometry.center is None:
         center = source_coord
     else:
-        center =geometry.center
+        center = geometry.center
 
     if geometry.shape == 'radial':
         if geometry.radius > min(mesh.Lx, mesh.Ly):

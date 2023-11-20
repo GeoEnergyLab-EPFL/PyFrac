@@ -65,7 +65,7 @@ def finiteDiff_operator_laminar(w, EltCrack, muPrime, NeiElements, dx, dy, InCra
 
 # -----------------------------------------------------------------------------------------------------------------------
 
-def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
+def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, solidProp, simProp):
     """
     This function returns the gravity term (G in Zia and Lecampion 2019).
 
@@ -76,6 +76,7 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
         Mesh (CartesianMesh):       -- the mesh.
         InCrack (ndarray):          -- An array specifying whether elements are inside the fracture or not with
                                        1 or 0 respectively.
+        solidProp (object):         -- An object of the materialProperties class.
         simProp (object):           -- An object of the SimulationProperties class.
 
     Returns:
@@ -89,9 +90,13 @@ def Gravity_term(w, EltCrack, fluidProp, mesh, InCrack, simProp):
             # width at the cell edges evaluated by averaging. Zero if the edge is outside fracture
             wBtmEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 2]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 2]]
             wTopEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 3]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 3]]
+            wLeftEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 0]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 0]]
+            wRightEdge = (w[EltCrack] + w[mesh.NeiElements[EltCrack, 1]]) / 2 * InCrack[mesh.NeiElements[EltCrack, 1]]
 
-            G[EltCrack] = fluidProp.density * simProp.gravityValue * (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy\
-                          / fluidProp.muPrime
+            G[EltCrack] = -fluidProp.density * solidProp.gravityValue[2 * EltCrack] * \
+                          (wLeftEdge ** 3 - wRightEdge ** 3) / mesh.hy / fluidProp.muPrime - \
+                          fluidProp.density * solidProp.gravityValue[2 * EltCrack - 1] * \
+                          (wTopEdge ** 3 - wBtmEdge ** 3) / mesh.hy / fluidProp.muPrime
         else:
             raise SystemExit("Effect of gravity is only supported for Newtonian fluid in laminar flow regime yet!")
 
@@ -698,7 +703,7 @@ def pressure_gradient(w, C, sigma0, Mesh, EltCrack, InCrack):
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-def pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack):
+def pressure_gradient_form_pressure(pf, Mesh, EltCrack, InCrack):
     """
     This function gives the pressure gradient at the cell edges evaluated with the pressure
     """
@@ -724,7 +729,7 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
     """
     if muPrime != 0:
         dp = np.zeros((8, Mesh.NumberOfElts), dtype=np.float64)
-        (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient_form_pressure( pf, Mesh, EltCrack, InCrack)
+        (dpdxLft, dpdxRgt, dpdyBtm, dpdyTop) = pressure_gradient_form_pressure(pf, Mesh, EltCrack, InCrack)
         # dp = [dpdxLft , dpdxRgt, dpdyBtm, dpdyTop, dpdyLft, dpdyRgt, dpdxBtm, dpdxTop]
         dp[0, EltCrack] = dpdxLft
         dp[1, EltCrack] = dpdxRgt
@@ -783,20 +788,52 @@ def calculate_fluid_flow_characteristics_laminar(w, pf, sigma0, Mesh, EltCrack, 
             rhoTopEdge = (solid.density[EltCrack] + solid.density[Mesh.NeiElements[EltCrack, 3]]) / 2
 
             # we add the gravity term for fluid flux
-            fluid_flux[-1, :] = fluid_flux[-1, :] -\
-                                (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) * simulProp.gravityValue)
-            fluid_flux[-2, :] = fluid_flux[-2, :] -\
-                                (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) * simulProp.gravityValue)
+            fluid_flux[0, :] = fluid_flux[-1, :] - \
+                                (-wLftEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack])
+            # (rhoLftEdge - density) *
+            fluid_flux[1, :] = fluid_flux[-2, :] - \
+                               (-wRgtEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack])
+            #(rhoRgtEdge - density) *
+            fluid_flux[2, :] = fluid_flux[-2, :] - \
+                               (-wBtmEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack + 1])
+            # (rhoBtmEdge - density) *
+            fluid_flux[3, :] = fluid_flux[-1, :] - \
+                                (-wTopEdge ** 3 / muPrime * density * solid.gravityValue[2 * EltCrack + 1])
+            # (rhoTopEdge - density) *
 
             # we add the gravity term for the fluid flux components.
-            fluid_flux_components[1, :] = fluid_flux_components[1, :] -\
-                                          (-wLftEdge ** 3 / muPrime * (rhoLftEdge - density) * simulProp.gravityValue)
-            fluid_flux_components[3, :] = fluid_flux_components[3, :] -\
-                                          (-wRgtEdge ** 3 / muPrime * (rhoRgtEdge - density) * simulProp.gravityValue)
-            fluid_flux_components[5, :] = fluid_flux_components[5, :] -\
-                                          (-wBtmEdge ** 3 / muPrime * (rhoBtmEdge - density) * simulProp.gravityValue)
-            fluid_flux_components[7, :] = fluid_flux_components[7, :] -\
-                                          (-wTopEdge ** 3 / muPrime * (rhoTopEdge - density) * simulProp.gravityValue)
+            fluid_flux_components[0, :] = fluid_flux_components[0, :] - \
+                                          (-wLftEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack])
+            # (rhoLftEdge - density) *
+            fluid_flux_components[1, :] = fluid_flux_components[1, :] - \
+                                          (-wLftEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack + 1])
+            # (rhoLftEdge - density) *
+            fluid_flux_components[2, :] = fluid_flux_components[2, :] - \
+                                          (-wRgtEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack])
+            # (rhoRgtEdge - density) *
+            fluid_flux_components[3, :] = fluid_flux_components[3, :] - \
+                                          (-wRgtEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack + 1])
+            # (rhoRgtEdge - density) *
+            fluid_flux_components[4, :] = fluid_flux_components[4, :] - \
+                                          (-wBtmEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack])
+            # (rhoBtmEdge - density) *
+            fluid_flux_components[5, :] = fluid_flux_components[5, :] - \
+                                          (-wBtmEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack + 1])
+            # (rhoBtmEdge - density) *
+            fluid_flux_components[6, :] = fluid_flux_components[6, :] - \
+                                          (-wTopEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack])
+            # (rhoTopEdge - density) *
+            fluid_flux_components[7, :] = fluid_flux_components[7, :] - \
+                                          (-wTopEdge ** 3 / muPrime * density *
+                                           solid.gravityValue[2 * EltCrack + 1])
+            # (rhoTopEdge - density) *
 
         fluid_vel = copy.deepcopy(fluid_flux)
         wEdges = [wLftEdge, wRgtEdge, wBtmEdge, wTopEdge]
