@@ -614,13 +614,13 @@ def FindBracket_w(dist, Kprime, Eprime, muPrime, Cprime, Vel, regime):
                         * dist ** (5/8)
     wm = 2 ** (1 / 3) * 3 ** (5 / 6) * (Vel * muPrime / Eprime) ** (1/3) * dist ** (2/3)
 
-    if np.nanmin([wk, wmtld, wm]) > np.finfo(np.float).eps:
+    if np.nanmin([wk, wmtld, wm]) > np.finfo(float).eps:
         b = 0.95 * np.nanmin([wk, wmtld, wm])
         a = 1.05 * np.nanmax([wk, wmtld, wm])
-    elif np.nanmin([wmtld, wm]) > np.finfo(np.float).eps:
+    elif np.nanmin([wmtld, wm]) > np.finfo(float).eps:
         b = 0.95 * np.nanmin([wmtld, wm])
         a = 1.05 * np.nanmax([wmtld, wm])
-    elif np.nanmin([wk, wm]) > np.finfo(np.float).eps:
+    elif np.nanmin([wk, wm]) > np.finfo(float).eps:
         b = 0.95 * np.nanmin([wk, wm])
         a = 1.05 * np.nanmax([wk, wm])
     else:

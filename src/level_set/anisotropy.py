@@ -92,7 +92,7 @@ def find_angle(elt_ribbon, elt_tip, zr_vrtx_tip, a_tip, b_tip, c_tip, x_lft, y_l
     front line in the given tip elements.
     """
 
-    closest_tip_cell = np.zeros((len(elt_ribbon),), dtype=np.int)
+    closest_tip_cell = np.zeros((len(elt_ribbon),), dtype=int)
     dist_ribbon = np.zeros((len(elt_ribbon),), dtype=np.float64)
     alpha = np.zeros((len(elt_ribbon),), dtype=np.float64)
     for i in range(len(elt_ribbon)):
@@ -368,7 +368,7 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
     polygon = np.vstack({tuple(row) for row in polygon})
 
 
-    tip_smoothed = np.array([], dtype=np.int) # the cells containing the edges of polygon (giving the smoothed front)
+    tip_smoothed = np.array([], dtype=int) # the cells containing the edges of polygon (giving the smoothed front)
     smthed_tip_points_left = np.empty((0, 2), dtype=np.float64) #left points of the tip line in the new tip cells
     smthed_tip_points_rgt = np.empty((0, 2), dtype=np.float64) #right points of the tip line in the new tip cells
 
@@ -388,7 +388,7 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
             dist = (polygon[cell_pnt[0], 0] - polygon[cell_pnt, 0]) ** 2 + (polygon[cell_pnt[0], 1] - polygon[
                 cell_pnt, 1]) ** 2
             farthest = np.argmax(dist)
-            to_delete = np.array([], dtype=np.int)
+            to_delete = np.array([], dtype=int)
             for m in range(1, cell_pnt.size):
                 if m != farthest:
                     to_delete = np.append(to_delete, cell_pnt[m])
@@ -426,8 +426,8 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
     smthed_tip_lines_c[zero_angle] = -smthed_tip_points_rgt[zero_angle, 0]
 
     # find the left neighbor of the tip cells in the tip
-    tip_lft_neghb = np.zeros((len(tip_smoothed),), dtype=np.int)
-    tip_rgt_neghb = np.empty((len(tip_smoothed),), dtype=np.int)
+    tip_lft_neghb = np.zeros((len(tip_smoothed),), dtype=int)
+    tip_rgt_neghb = np.empty((len(tip_smoothed),), dtype=int)
     for i in range(len(tip_smoothed)):
         equal = smthed_tip_points_rgt == smthed_tip_points_left[i]
         left_nei = np.where(np.logical_and(equal[:, 0], equal[:, 1]))[0]
