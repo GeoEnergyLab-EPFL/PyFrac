@@ -214,3 +214,10 @@ def send_phone_message(bot_message):
         print(e);
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+def isIterable(x) -> bool:
+    """Check if a variable is iterable. Note: Also returns True for strings."""
+    # return hasattr(x, "__iter__") and not isinstance(x, str) # To return false for strings
+    return hasattr(x, "__iter__")
+
+#-----------------------------------------------------------------------------------------------------------------------
