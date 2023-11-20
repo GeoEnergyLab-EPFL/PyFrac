@@ -102,7 +102,7 @@ class Monolithic_EHL_sys_obj(LinearOperator):
       self.FinDiffOprtr = FinDiffOprtr
 
       G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
-                       frac.mesh, InCrack, sim_prop)
+                       frac.mesh, InCrack, mat_prop, sim_prop)
 
       S = np.zeros((n_total,), dtype=self.dtype)
 
@@ -362,8 +362,8 @@ def MakeEquationSystem_Monolithic_precond(solk, interItr, *args, return_w=False,
                                  lst_edgeInCrk)
 
 
-    G = Gravity_term(wNplusOne, EltCrack,   fluid_prop,
-                    frac.mesh,  InCrack,    sim_prop)
+    G = Gravity_term(wNplusOne, EltCrack, fluid_prop,
+                    frac.mesh, InCrack, mat_prop, sim_prop)
 
     n_ch = len(to_solve)
     n_act = len(active)
