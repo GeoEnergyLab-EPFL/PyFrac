@@ -1,1 +1,14 @@
 # Created by .ignore support plugin (hsz.mobi)
+*__pycache__*
+Pipfile.lock
+
+# OS litter
+*.DS_Store
+
+# Pyfrac has a separate repository for notebooks
+*.ipynb
+*.nb
+
+# Pyfrac conventions
+Data/*
+*.log
