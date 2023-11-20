@@ -131,13 +131,13 @@ if runQ:
     )
 
     # Note: For a constant injection use "Qo = your_injection_rate". For injection histories the number of entries in Qo
-    # must match with the number of entries in t_change. First entry of Qo is injection for t between the first and second
-    # entry of t_change and so on.
-    t_change = [0, 13, 23, 73, 123, 173]
-    # Qo = [6e-10, 2e-09, 2.7e-09, 2.05e-09, 1.5e-09, 1.1e-09]
+    # must match with the number of entries in injectTStamps. First entry of Qo is injection for t between the first and second
+    # entry of injectTStamps and so on.
+    injectTStamps = np.asarray([0, 5.4, 5.7, 6.9, 8.2, 14., 17., 23., 30.5, 38., 45.5, 53., 60.5])
+    # Qo = np.asarray([0.062, 0.15, 0.46, 0.85, 1.1, 1., 1.3, 0.78, 0.58, 0.41, 0.32, 0.23, 0.09])*1e-6/60 # m3/sec
     Qo = injectionRate_m3PerSec = 0.08 * 1e-6 / 60
-    if type(Qo) == list:
-        injectionRate_m3PerSec = np.asarray([t_change, Qo])
+    if isIterable(Qo):
+        injectionRate_m3PerSec = np.asarray([injectTStamps, Qo])
 
     #                                   mL/MPa     m3/mL  MPa/Pa
     lumpedCompressibility_m3perPa = 6.29e-2 * 1e-6 * 1e-6
