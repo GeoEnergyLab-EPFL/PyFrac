@@ -905,7 +905,7 @@ class CartesianMesh:
         # add rectangle for each cell
         patches = []
         for i in range(self.NumberOfElts):
-            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
+            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), closed=True)
             patches.append(polygon)
 
         if plot_prop is None:
@@ -1135,7 +1135,7 @@ class CartesianMesh:
         # add rectangle for each cell
         patch_list = []
         for i in elements:
-            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), True)
+            polygon = mpatches.Polygon(np.reshape(self.VertexCoor[self.Connectivity[i], :], (4, 2)), closed=True)
             patch_list.append(polygon)
 
         p = PatchCollection(patch_list,
