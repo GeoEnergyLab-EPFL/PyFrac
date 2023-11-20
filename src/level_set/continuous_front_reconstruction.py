@@ -32,7 +32,7 @@ def plotgrid(mesh,ax):
     # add rectangle for each cell
     patches = []
     for i in range(mesh.NumberOfElts):
-        polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), True)
+        polygon = mpatches.Polygon(np.reshape(mesh.VertexCoor[mesh.Connectivity[i], :], (4, 2)), closed=True)
         patches.append(polygon)
 
     # if plot_prop is None:
