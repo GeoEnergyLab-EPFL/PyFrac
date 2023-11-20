@@ -132,7 +132,7 @@ def sol_sys_EHL(Fr_lstTmStp, sim_properties, fluid_properties, mat_properties, i
             #             corr_ribb_flag = True
             #
             #         # make a list of the ind of corresponding ribbon (and to_impose) that are in neg
-            #         toImp_neg_rib = np.asarray([], dtype=np.int)
+            #         toImp_neg_rib = np.asarray([], dtype=int)
             #         for i, elem in enumerate(to_impose):
             #             if corr_ribbon_TI[i] in neg:
             #                 toImp_neg_rib = np.append(toImp_neg_rib, i)

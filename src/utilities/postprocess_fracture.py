@@ -2004,7 +2004,7 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direct
         else:
             fr_mesh = Fr_list[i].mesh
         # 1) get the coordinates of the points in the slices
-        vector_to_be_lost = np.zeros(fr_mesh.NumberOfElts,dtype=np.int)
+        vector_to_be_lost = np.zeros(fr_mesh.NumberOfElts,dtype=int)
         NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
                                                                                                             fr_mesh,
                                                                                                             point = initial_point,
@@ -2044,9 +2044,9 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direct
         EltCrack_i = Fr_list[i].EltCrack
         fluid_vel_list_i = fluid_vel_list[i]
 
-        vector_to_be_lost1 = np.zeros(fr_mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost1 = np.zeros(fr_mesh.NumberOfElts, dtype=float)
         vector_to_be_lost1[EltCrack_i] = fluid_vel_list_i[indx1,:]
-        vector_to_be_lost2 = np.zeros(fr_mesh.NumberOfElts, dtype=np.float)
+        vector_to_be_lost2 = np.zeros(fr_mesh.NumberOfElts, dtype=float)
         vector_to_be_lost2[EltCrack_i] = fluid_vel_list_i[indx2,:]
 
         fluid_vel_list_final_i = [None] * (len(vector_to_be_lost1[sampling_cells]) + len(vector_to_be_lost2[sampling_cells]))
