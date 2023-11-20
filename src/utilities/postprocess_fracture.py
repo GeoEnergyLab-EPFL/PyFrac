@@ -2090,11 +2090,10 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
     Viscous_P = init_list_of_objects(len(Fr_list)-1)
     Fracture_P = init_list_of_objects(len(Fr_list)-1)
     Elastic_P = init_list_of_objects(len(Fr_list)-1)
-    Work_Against_InSitu_Stress = init_list_of_objects(len(Fr_list)-1)
     LeakOff_P = init_list_of_objects(len(Fr_list) - 1)
 
     Injection_P = init_list_of_objects(len(Fr_list) - 1)
-    Gravity_Fluid_P = init_list_of_objects(len(Fr_list) - 1)
+    Gravity_P = init_list_of_objects(len(Fr_list) - 1)
 
     power_time_steps = init_list_of_objects(len(Fr_list)-1)
 
@@ -2168,10 +2167,6 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
             Elastic_P[iter] = get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pNet, fr_im1.pNet, cells)
             # effective rate of elastic energy by Peruzzo et al.
 
-            Work_Against_InSitu_Stress_Int = get_Elastic_P(fr_im1, fr_i, fr_i_mesh, fr_i.pFluid-fr_i.pNet,
-                                                           fr_im1.pFluid-fr_im1.pNet, cells)
-            # rate of work agains in-situ stress by Peruzzo et al..
-
 
 
             Injection_P[iter] = get_External_injection(fr_im1, fr_i, cells)
@@ -2180,22 +2175,16 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
             LeakOff_P[iter] = get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells)
             # power loss  by leak-off by Peruzzo et al.
 
-            Gravity_Fluid_P[iter] = get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells)
+            Gravity_P[iter] = get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells)
             # power provided to the fluid by gravity
-
-
-            Work_Against_InSitu_Stress[iter] = [2 * Work_Against_InSitu_Stress_Int[0]]
-            for i in range(len(cells) - 1):
-                Work_Against_InSitu_Stress[iter] += [2 * Work_Against_InSitu_Stress_Int[i + 1]]
-
 
             # - Store the time and mark the next iteration - #
             power_time_steps[iter] = fr_i.time
             iter = iter + 1
 
     # * -- Return only the non-zero values -- * #
-    return Viscous_P[:iter], Fracture_P[:iter], Elastic_P[:iter], Work_Against_InSitu_Stress[:iter],\
-           Injection_P[:iter], LeakOff_P[:iter], Gravity_Fluid_P[:iter], power_time_steps[:iter]
+    return Viscous_P[:iter], Fracture_P[:iter], Elastic_P[:iter], Injection_P[:iter], LeakOff_P[:iter],\
+           Gravity_P[:iter], power_time_steps[:iter]
 
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -2588,7 +2577,7 @@ def get_External_injection(fr_im1, fr_i, cells):
     for split in range(len(cells)):
         if len(fr_i.source) != 0 and (fr_i.time - fr_im1.time) != 0. and len(np.intersect1d(fr_i.source[0],
                                                                                             cells[split])):
-            output[split] = fr_i.pFluid[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) / \
+            output[split] = fr_i.pNet[fr_i.source[0]] * (fr_i.injectedVol - fr_im1.injectedVol) / \
                             (fr_i.time - fr_im1.time)
         else:
             output[split] = 0.
@@ -2619,6 +2608,7 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
     w = fr_i.w[fr_i.EltCrack]                   # the opening of all cells in the crack
     gravity = Solid.gravityValue                # value of gravitational acceleration
     rho_f = Fluid.density                       # fluid density
+    rho_s = Solid.density
 
     # * -- Get the fluid velocity of the cells, including the gravity term -- * #
     fluid_vel_list, waste = get_velocity_as_vector(Solid, Fluid, [fr_i], SimProp)
@@ -2666,8 +2656,8 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
                 Vx[i] = Vx[i]/4
 
                 # - The external power is velocity * opening * flui density * gravitational acceleration - #
-                External_p_gravity_vec[i] = Vy[i] * w[crack_ind] * rho_f * gravity[2 * ID + 1] + \
-                                            Vx[i] * w[crack_ind] * rho_f * gravity[2 * ID]
+                External_p_gravity_vec[i] = Vy[i] * w[crack_ind] * (rho_s[ID] - rho_f) * gravity[2 * ID + 1] + \
+                                            Vx[i] * w[crack_ind] * (rho_s[ID] - rho_f) * gravity[2 * ID]
             else:
                 # - For tip elements the normal of the propagation direction is. - #
                 tip_ind = np.where(fr_i.EltTip==ID)[0][0]
@@ -2685,8 +2675,9 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
                     normal_y = 0.
                     normal_x = 0.
                 # - We multiply the fracture velocity (= fluid velocity) by the normal in y as we assume g in -y - #
-                External_p_gravity_vec[i] = fr_i.FillF[tip_ind] * w[crack_ind] * rho_f * np.abs(fr_i.v[tip_ind]) * \
-                                            (normal_y * gravity[2 * ID + 1] + normal_x * gravity[2 * ID])
+                External_p_gravity_vec[i] = fr_i.FillF[tip_ind] * w[crack_ind] * (rho_s[ID] - rho_f)\
+                                            * np.abs(fr_i.v[tip_ind]) * (normal_y * gravity[2 * ID + 1]
+                                                                         + normal_x * gravity[2 * ID])
 
         output[split] = cell_area * np.sum(External_p_gravity_vec)
 
