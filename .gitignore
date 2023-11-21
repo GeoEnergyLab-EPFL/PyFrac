@@ -1,6 +1,14 @@
 # Created by .ignore support plugin (hsz.mobi)
+
+# Build, packaging and environment files
 *__pycache__*
 Pipfile.lock
+.venv
+venv
+
+# IDEs
+.idea
+.vscode
 
 # OS litter
 *.DS_Store
@@ -9,6 +17,16 @@ Pipfile.lock
 *.ipynb
 *.nb
 
-# Pyfrac conventions
-Data/*
+# Logs
+pip-log.txt
+pip-delete-this-directory.txt
+LOG
 *.log
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+
+# Pyfrac conventions
+Data
