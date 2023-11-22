@@ -230,40 +230,26 @@ class Controller:
         # load elasticity matrix
         if self.C is None:
             log.info("Making elasticity matrix...")
-            if self.sim_prop.symmetric:
-                if not self.sim_prop.get_volumeControl():
-                    raise ValueError("Symmetric fracture is only supported for inviscid fluid yet!")
 
-            if not self.solid_prop.TI_elasticity:
-                if self.sim_prop.symmetric:
-                    self.C = load_isotropic_elasticity_matrix_symmetric(self.fracture.mesh,
-                                                                        self.solid_prop.Eprime)
-                else:
-                    if not self.sim_prop.useBlockToeplizCompression:
-                        self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
-                                                                  self.solid_prop.Eprime)
-                    else:
-                        self.C = load_isotropic_elasticity_matrix_toepliz(self.fracture.mesh,
-                                                                          self.solid_prop.Eprime,
-                                                                          Kernel = self.sim_prop.elasticKernel)
+            if self.solid_prop.TI_elasticity and self.sim_prop.useBlockToeplizCompression:
+                self.C = load_TI_elasticity_matrix_toepliz(self.fracture.mesh,
+                                                        self.solid_prop.Cij,
+                                                        self.sim_prop.TI_KernelExecPath)
+            elif self.solid_prop.TI_elasticity and not self.sim_prop.useBlockToeplizCompression:
+                self.C = load_TI_elasticity_matrix(self.fracture.mesh.Lx,
+                                                self.fracture.mesh.Ly,
+                                                self.fracture.mesh.nx,
+                                                self.fracture.mesh.ny,
+                                                self.solid_prop.Cij,
+                                                self.sim_prop.TI_KernelExecPath,
+                                                toeplitz = False)
+            elif self.sim_prop.useBlockToeplizCompression:
+                self.C = load_isotropic_elasticity_matrix_toepliz(self.fracture.mesh,
+                                                                    self.solid_prop.Eprime,
+                                                                    Kernel = self.sim_prop.elasticKernel)
             else:
-                if not self.sim_prop.useBlockToeplizCompression:
-                    C = load_TI_elasticity_matrix(self.fracture.mesh.Lx,
-                                                  self.fracture.mesh.Ly,
-                                                  self.fracture.mesh.nx,
-                                                  self.fracture.mesh.ny,
-                                                  self.solid_prop.Cij,
-                                                  self.sim_prop.TI_KernelExecPath,
-                                                  toeplitz = False)
-                    # compressing the elasticity matrix for symmetric fracture
-                    if self.sim_prop.symmetric:
-                        self.C = symmetric_elasticity_matrix_from_full(C, self.fracture.mesh)
-                    else:
-                        self.C = C
-                else:
-                    self.C = load_TI_elasticity_matrix_toepliz(self.fracture.mesh,
-                                                          self.solid_prop.Cij,
-                                                          self.sim_prop.TI_KernelExecPath)
+                self.C = load_isotropic_elasticity_matrix(self.fracture.mesh,
+                                                            self.solid_prop.Eprime)
             log.info('Done!')
 
         # # perform first time step with implicit front advancing due to non-availability of velocity
