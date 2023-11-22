@@ -91,6 +91,10 @@ class Controller:
         self.lastSuccessfulTS = Fracture.time
         self.maxTmStp = 0           # the maximum time step taken uptil now by the controller.
 
+        # deactivate the 1/4-domain symmetry in case of block_toepliz_compression
+        if self.sim_prop.useBlockToeplizCompression and self.sim_prop.symmetric:
+            raise ValueError("Pyfrac has no combination of 1/4-domain symmetry and block toeplitz compression. You should choose one or the other.")
+
         # reorder the list of self.sim_prop.plotVar such that custom is at the end. This is needed for easier Figures handling
         if 'custom' in self.sim_prop.plotVar:
             self.sim_prop.plotVar.remove('custom')
@@ -222,10 +226,6 @@ class Controller:
 
         if self.sim_prop.log2file:
             self.sim_prop.set_logging_to_file(self.logAddress)
-
-        # deactivate the block_toepliz_compression functions in case of symmetric
-        if self.sim_prop.symmetric:  # in case you save 1/4 of the elasticity due to domain symmetry
-            self.sim_prop.useBlockToeplizCompression = False
 
         # load elasticity matrix
         if self.C is None:
