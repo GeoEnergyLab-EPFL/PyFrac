@@ -528,15 +528,6 @@ class CartesianMesh:
             #todo
             #raise ValueError("Mesh with no center element. To be looked into")
 
-        if symmetric:
-            self.corresponding = corresponding_elements_in_symmetric(self)
-            self.symmetricElts = get_symetric_elements(self, np.arange(self.NumberOfElts))
-            self.activeSymtrc, self.posQdrnt, self.boundary_x, self.boundary_y = get_active_symmetric_elements(self)
-
-            self.volWeights = np.full((len(self.activeSymtrc), ), 4., dtype=np.float32)
-            self.volWeights[len(self.posQdrnt): -1] = 2.
-            self.volWeights[-1] = 1.
-
     # -----------------------------------------------------------------------------------------------------------------------
 
     def __eq__(self, other):
