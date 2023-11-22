@@ -183,10 +183,6 @@ def getSuperFast_sparseC_smooth(C_toeplitz_coe, C_toeplitz_coe_decay, elmts, nx,
                 cols.append(iter2)
                 rows.append(iter1)
                 data.append(C_toeplitz_coe[ii2])
-                # symmetry
-                # rows.append(iter2)
-                # cols.append(iter1)
-                # data.append(C_toeplitz_coe[ii2])
     # symmetry
     rows_new = concat_equal1(rows,cols)
     cols = concat_equal1(cols,rows)

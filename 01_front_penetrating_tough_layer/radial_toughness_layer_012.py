@@ -32,7 +32,7 @@ restart = False
 if run == True:
 
     # creating mesh
-    Mesh = CartesianMesh(0.31, 0.31, 301, 301, symmetric=True)
+    Mesh = CartesianMesh(0.31, 0.31, 301, 301)
 
     # solid properties
     nu = 0.4                            # Poisson's ratio
@@ -81,7 +81,6 @@ if run == True:
         # initialization parameters
         Fr_geometry = Geometry('radial', radius=0.25, center=[0,0])
         init_param = InitializationParameters(Fr_geometry, regime='K')
-        simulProp.symmetric = True
         simulProp.limitAdancementTo2cells=False
         simulProp.plotTSJump = 20
         simulProp.timeStepLimit = None

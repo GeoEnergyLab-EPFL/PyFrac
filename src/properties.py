@@ -451,13 +451,6 @@ class SimulationProperties:
         TI_KernelExecPath (string):  -- the folder containing the executable to calculate transverse isotropic
                                        kernel or kernel with free surface.
         explicitProjection (bool):   -- if True, direction from last time step will be used to evaluate TI parameters.
-        symmetric (bool):            -- if True, the four quadrant of the domain will be considered symmetric and only
-                                        one will be solved for. The rest will be replaced by its reflection along the x
-                                        and y axes.
-
-                                        Attention:
-                                            The symmetric fracture is only implemented in the toughness dominated case.\
-                                            Use full domain if viscous fluid is injected.
         enableGPU                    -- if True, the dense matrix vector product for the RKL scheme would be done using
                                         GPU. If False, multithreaded dot product implemented in the explicit_RKL module
                                         will be used to do it.
@@ -621,7 +614,6 @@ class SimulationProperties:
         self.saveStatisticsPostCoalescence=simul_param.save_statistics_post_coalescence
         self.saveYieldRatio = simul_param.save_yield_ratio
         self.explicitProjection = simul_param.explicit_projection
-        self.symmetric = simul_param.symmetric
         self.doublefracture = simul_param.double_fracture_vol_contr
         self.projMethod = simul_param.proj_method
         self.enableGPU = simul_param.enable_GPU

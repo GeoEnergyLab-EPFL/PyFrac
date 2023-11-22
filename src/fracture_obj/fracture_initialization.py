@@ -24,7 +24,6 @@ from level_set.continuous_front_reconstruction import reconstruct_front_continuo
 from solid.elasticity_tip_correction import tip_correction_
 
 from tip.volume_integral import Integral_over_cell
-from solid.elasticity_isotropic_symmetric import self_influence
 from linear_solvers.linear_iterative_solver import iteration_counter
 from scipy.optimize import least_squares
 
@@ -858,7 +857,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False, useBlockToeplizCompression=False,
+def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, useBlockToeplizCompression=False,
                        volumeControlHMAT=False,
                        Eprime=None,
                        boundaryEffect = None,
@@ -879,8 +878,6 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         w (ndarray):            -- the provided width for each cell, can be None if not available.
         p (ndarray):            -- the provided pressure for each cell, can be None if not available.
         volume (ndarray):       -- the volume of the fracture, can be None if not available.
-        symmetric (bool):       -- if True, the fracture will be considered strictly symmetric and only one quadrant
-                                   will be simulated.
         Eprime (float):         -- the plain strain elastic modulus.
 
     Returns:
