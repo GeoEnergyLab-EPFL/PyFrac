@@ -91,10 +91,6 @@ class Controller:
         self.lastSuccessfulTS = Fracture.time
         self.maxTmStp = 0           # the maximum time step taken uptil now by the controller.
 
-        # deactivate the 1/4-domain symmetry in case of block_toepliz_compression
-        if self.sim_prop.useBlockToeplizCompression and self.sim_prop.symmetric:
-            raise ValueError("Pyfrac has no combination of 1/4-domain symmetry and block toeplitz compression. You should choose one or the other.")
-
         # reorder the list of self.sim_prop.plotVar such that custom is at the end. This is needed for easier Figures handling
         if 'custom' in self.sim_prop.plotVar:
             self.sim_prop.plotVar.remove('custom')
@@ -1566,7 +1562,7 @@ class Controller:
 
         new_indexes = np.array(mapping_old_indexes(new_mesh, self.fracture.mesh, direction))
 
-        if len(self.C) != Ne and not self.sim_prop.symmetric:
+        if len(self.C) != Ne:
             self.C = np.vstack((np.hstack((self.C, np.full((Ne_old, Ne - Ne_old), 0.))),
                np.full((Ne - Ne_old, Ne), 0.)))
 
@@ -1586,7 +1582,5 @@ class Controller:
 
             self.C[np.ix_(new_indexes, add_el)] = np.transpose(self.C[np.ix_(add_el, new_indexes)])
 
-        elif not self.sim_prop.symmetric:
-            self.C = load_isotropic_elasticity_matrix(new_mesh, self.solid_prop.Eprime)
         else:
-            self.C = load_isotropic_elasticity_matrix_symmetric(new_mesh, self.solid_prop.Eprime)
+            self.C = load_isotropic_elasticity_matrix(new_mesh, self.solid_prop.Eprime)
