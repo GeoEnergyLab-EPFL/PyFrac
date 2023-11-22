@@ -19,7 +19,6 @@ src
    postprocess_fracture
    postprocess_performance
    properties
-   symmetry
    time_stepping
    tip_inversion
    utility
