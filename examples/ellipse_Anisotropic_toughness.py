@@ -26,7 +26,7 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
+Mesh = CartesianMesh(8, 4, 81, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -68,7 +68,7 @@ simulProp.tolFractFront = 4e-3          # increase tolerance for the anisotropic
 simulProp.remeshFactor = 1.5            # the factor by which the mesh will be compressed.
 simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
-simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
+
 simulProp.projMethod = 'ILSA_orig'
 simulProp.set_tipAsymptote('U1')
 

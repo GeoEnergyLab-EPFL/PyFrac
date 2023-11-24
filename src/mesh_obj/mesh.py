@@ -14,16 +14,13 @@ import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 from matplotlib.colors import to_rgb
 from matplotlib.collections import PatchCollection
+import logging
+import numpy as np
 
 # internal imports
 from properties import PlotProperties
 from utilities.visualization import zoom_factory, to_precision, text3d, EPFLcolor
-from mesh_obj.symmetry import *
 from numba import njit, uint64
-
-# implicit input
-from mesh_obj.symmetry import corresponding_elements_in_symmetric, get_symetric_elements, \
-    get_active_symmetric_elements
 
 
 @njit((uint64, uint64, uint64), nogil=True, cache=True)
@@ -80,8 +77,6 @@ class CartesianMesh:
     Args:
         nx,ny (int):                -- number of elements in x and y directions respectively.
         Lx,Ly (float):              -- lengths in x and y directions respectively.
-        symmetric (bool):           -- if true, additional variables (see list of attributes) will be evaluated for
-                                       symmetric fracture solver.
 
     Attributes:
         Lx,Ly (float):                    -- length of the domain in x and y directions respectively. The rectangular domain
@@ -128,15 +123,13 @@ class CartesianMesh:
 
     """
 
-    def __init__(self, Lx, Ly, nx, ny, symmetric=False):
+    def __init__(self, Lx, Ly, nx, ny):
         """ 
         Creates a uniform Cartesian mesh centered at zero and having the dimensions of [-Lx, Lx]*[-Ly, Ly].
 
         Args:
             nx,ny (int):        -- number of elements in x and y directions respectively
             Lx,Ly (float):      -- lengths in x and y directions respectively
-            symmetric (bool):   -- if true, additional variables (see list of attributes) will be evaluated for
-                                    symmetric fracture solver.
 
         """
         log = logging.getLogger('PyFrac.mesh')
@@ -527,15 +520,6 @@ class CartesianMesh:
             log.debug("Mesh with no center element. To be looked into")
             #todo
             #raise ValueError("Mesh with no center element. To be looked into")
-
-        if symmetric:
-            self.corresponding = corresponding_elements_in_symmetric(self)
-            self.symmetricElts = get_symetric_elements(self, np.arange(self.NumberOfElts))
-            self.activeSymtrc, self.posQdrnt, self.boundary_x, self.boundary_y = get_active_symmetric_elements(self)
-
-            self.volWeights = np.full((len(self.activeSymtrc), ), 4., dtype=np.float32)
-            self.volWeights[len(self.posQdrnt): -1] = 2.
-            self.volWeights[-1] = 1.
 
     # -----------------------------------------------------------------------------------------------------------------------
 

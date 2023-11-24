@@ -25,7 +25,7 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(0.3, 0.3, 41, 41, symmetric=True)
+Mesh = CartesianMesh(0.3, 0.3, 41, 41, symmetric=False)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -48,9 +48,10 @@ Fluid = FluidProperties(viscosity=0)
 simulProp = SimulationProperties()
 simulProp.finalTime = 1e2               # the time at which the simulation stops
 simulProp.set_tipAsymptote('K')         # the tip asymptote is evaluated with the toughness dominated assumption
-simulProp.set_volumeControl(True)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
+simulProp.set_volumeControl(False)       # use the inviscid fluid solver(toughness dominated), imposing volume balance
 simulProp.set_outputFolder("./Data/K_radial_symmetric") # the disk address where the files are saved
-simulProp.symmetric = True              # assume fracture geometry to be symmetric (only available for volume control)
+simulProp.useBlockToeplizCompression = True  # assume fracture geometry to be symmetric (only available for volume control)
+
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.15)
