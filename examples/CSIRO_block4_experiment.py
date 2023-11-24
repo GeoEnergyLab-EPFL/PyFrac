@@ -73,7 +73,7 @@ class custom_factory():
 
 
 run = True
-restart = True
+restart = False
 if run:
     # creating mesh
     Mesh = CartesianMesh(0.003, 0.003, 41, 41)
