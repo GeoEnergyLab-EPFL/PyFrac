@@ -27,7 +27,7 @@ from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
-Mesh = CartesianMesh(104, 63, 105, 85, symmetric=True)
+Mesh = CartesianMesh(104, 63, 105, 85)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
@@ -70,7 +70,7 @@ simulProp.set_volumeControl(True)     # to set up the solver in volume control m
 simulProp.tolFractFront = 4e-3        # increase tolerance for the anisotropic case
 simulProp.set_outputFolder("./Data/toughness_jump") # the disk address where the files are saved
 simulProp.set_simulation_name('anisotropic_toughness_jump')
-simulProp.symmetric = True            # set the fracture to symmetric
+
 simulProp.projMethod = 'ILSA_orig'
 simulProp.set_tipAsymptote('U1')
 

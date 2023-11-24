@@ -24,7 +24,6 @@ from level_set.continuous_front_reconstruction import reconstruct_front_continuo
 from solid.elasticity_tip_correction import tip_correction_
 
 from tip.volume_integral import Integral_over_cell
-from solid.elasticity_isotropic_symmetric import self_influence
 from linear_solvers.linear_iterative_solver import iteration_counter
 from scipy.optimize import least_squares
 
@@ -858,7 +857,7 @@ def generate_footprint(mesh, surv_cells, inner_region, dist_surv_cells, projMeth
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, symmetric=False, useBlockToeplizCompression=False,
+def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volume=None, useBlockToeplizCompression=False,
                        volumeControlHMAT=False,
                        Eprime=None,
                        boundaryEffect = None,
@@ -879,8 +878,6 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         w (ndarray):            -- the provided width for each cell, can be None if not available.
         p (ndarray):            -- the provided pressure for each cell, can be None if not available.
         volume (ndarray):       -- the volume of the fracture, can be None if not available.
-        symmetric (bool):       -- if True, the fracture will be considered strictly symmetric and only one quadrant
-                                   will be simulated.
         Eprime (float):         -- the plain strain elastic modulus.
 
     Returns:
@@ -930,65 +927,7 @@ def get_width_pressure(mesh, EltCrack, EltTip, FillFrac, C, w=None, p=None, volu
         if not w is None and not p is None:
             return w_calculated, p_calculated, None
 
-        if symmetric and not useBlockToeplizCompression and not volumeControlHMAT:
-
-            CrackElts_sym = mesh.corresponding[EltCrack]
-            CrackElts_sym = np.unique(CrackElts_sym)
-
-            EltTip_sym = mesh.corresponding[EltTip]
-            EltTip_sym = np.unique(EltTip_sym)
-
-            FillF_mesh = np.zeros((mesh.NumberOfElts,), )
-            FillF_mesh[EltTip] = FillFrac
-            FillF_sym = FillF_mesh[mesh.activeSymtrc[EltTip_sym]]
-            self_infl = self_influence(mesh, Eprime)
-
-            C_EltTip = np.copy(C[np.ix_(EltTip_sym, EltTip_sym)])  # keeping the tip element entries to restore current tip correction. This is
-            # done to avoid copying the full elasticity matrix.
-
-            # filling fraction correction for element in the tip region
-            for e in range(len(EltTip_sym)):
-                r = FillF_sym[e] - .25
-                if r < 0.1:
-                    r = 0.1
-                ac = (1 - r) / r
-                C[EltTip_sym[e], EltTip_sym[e]] += ac * np.pi / 4. * self_infl
-
-            # known p
-            if w is None and not p is None:
-                w_sym_EltCrack = np.linalg.solve(C[np.ix_(CrackElts_sym, CrackElts_sym)],
-                                                 p_calculated[mesh.activeSymtrc[CrackElts_sym]])
-                for i in range(len(w_sym_EltCrack)):
-                    w_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = w_sym_EltCrack[i]
-
-            # known w
-            if w is not None and p is None:
-                p_sym_EltCrack = np.dot(C[np.ix_(CrackElts_sym, CrackElts_sym)], w[mesh.activeSymtrc[CrackElts_sym]])
-                for i in range(len(p_sym_EltCrack)):
-                    p_calculated[mesh.symmetricElts[mesh.activeSymtrc[CrackElts_sym[i]]]] = p_sym_EltCrack[i]
-
-            # w and p both unknown
-            if w is None and p is None:
-                # calculate the width and pressure by considering fracture as a static fracture.
-                C_Crack = C[np.ix_(CrackElts_sym, CrackElts_sym)]
-
-                A = np.hstack((C_Crack, -np.ones((EltCrack.size, 1), dtype=np.float64)))
-                weights = mesh.volWeights[CrackElts_sym]
-                weights = np.concatenate((weights, np.array([0.0])))
-                A = np.vstack((A, weights))
-
-                b = np.zeros((len(EltCrack) + 1,), dtype=np.float64)
-                b[-1] = volume / mesh.EltArea
-
-                sol = np.linalg.solve(A, b)
-
-                w_calculated[EltCrack] = sol[np.arange(EltCrack.size)]
-                p_calculated[EltCrack] = sol[EltCrack.size]
-
-            # recover original C (without filling fraction correction)
-            C[np.ix_(EltTip_sym, EltTip_sym)] = C_EltTip
-
-        elif useBlockToeplizCompression:
+        if useBlockToeplizCompression:
             # proceding with the tip correction
             C_Crack = C[np.ix_(EltCrack, EltCrack)]
             C_Crack = tip_correction_(C_Crack, EltCrack, EltTip, FillFrac)

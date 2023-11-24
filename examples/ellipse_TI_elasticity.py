@@ -27,7 +27,7 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(8, 4, 81, 41, symmetric=True)
+Mesh = CartesianMesh(8, 4, 81, 41)
 
 # solid properties
 Cij = np.zeros((6, 6), dtype=float)
@@ -98,7 +98,7 @@ simulProp.set_tipAsymptote('K')         # set the tip asymptote to toughness dom
 simulProp.set_outputFolder("./Data/TI_elasticity_ellipse")  # setting the output folder
 simulProp.set_simulation_name('TI_ellasticy_benchmark')     # setting the simulation name
 simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the executable that calculates TI kernel
-simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
+
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
 simulProp.projMethod = 'ILSA_orig'
 simulProp.set_tipAsymptote('U1')
