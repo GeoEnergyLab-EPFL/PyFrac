@@ -365,7 +365,7 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
         i += 1
 
     # remove redundant points
-    polygon = np.vstack({tuple(row) for row in polygon})
+    polygon = np.vstack(tuple({tuple(row) for row in polygon}))
 
 
     tip_smoothed = np.array([], dtype=int) # the cells containing the edges of polygon (giving the smoothed front)
