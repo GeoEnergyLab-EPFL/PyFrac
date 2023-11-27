@@ -276,7 +276,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     elif variable == 'Reynolds number' or variable == 'Re':
         if fracture_list[-1].ReynoldsNumber is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
@@ -286,16 +286,16 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list.append(np.mean(fracture_list[i].ReynoldsNumber, axis=0))
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid flux' or variable == 'ff':
         if fracture_list[-1].fluidFlux is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
@@ -305,16 +305,16 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidFlux, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'fluid velocity' or variable == 'fv':
         if fracture_list[-1].fluidVelocity is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
@@ -324,10 +324,10 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidVelocity, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'pressure gradient x' or variable == 'dpdx':
@@ -364,26 +364,26 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
     elif variable == 'fluid flux as vector field' or variable == 'ffvf':
         if fracture_list[-1].fluidFlux_components is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
                 variable_list[i] = fracture_list[i].fluidFlux_components[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.fluidFlux_components is not None:
+            elif frac.fluidFlux_components is not None:
                 variable_list[i] = fracture_list[i].fluidFlux_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
         if fracture_list[-1].fluidVelocity_components is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
@@ -393,48 +393,48 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = fracture_list[i].fluidVelocity_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'effective viscosity' or variable == 'ev':
         if fracture_list[-1].effVisc is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
                 variable_list[i] = fracture_list[i].effVisc[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.effVisc is not None:
+            elif frac.effVisc is not None:
                 variable_list[i] = np.mean(fracture_list[i].effVisc, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'yielded' or variable == 'y':
         if fracture_list[-1].yieldRatio is None:
             raise SystemExit(err_var_not_saved)
-        for i in range(len(fracture_list)):
+        for i, frac in enumerate(fracture_list):
             if edge < 0 or edge > 4:
                 raise ValueError('Edge can be an integer between and including 0 and 4.')
             if edge < 4:
                 variable_list[i] = fracture_list[i].yieldRatio[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.yieldRatio is not None:
+            elif frac.yieldRatio is not None:
                 variable_list[i] = np.mean(fracture_list[i].yieldRatio, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(frac.mesh, int):
+                    fr_mesh = fracture_list[frac.mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = frac.mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
