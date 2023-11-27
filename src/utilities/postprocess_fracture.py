@@ -264,10 +264,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
 
     elif variable == 'front velocity' or variable == 'v':
         for i in fracture_list:
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
-            else:
-                fr_mesh = i.mesh
+            fr_mesh = i.mesh
             vel = np.full((fr_mesh.NumberOfElts, ), np.nan)
             vel[i.EltTip] = i.v
             variable_list.append(vel)
@@ -286,10 +283,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list.append(np.mean(fracture_list[i].ReynoldsNumber, axis=0))
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid flux' or variable == 'ff':
@@ -305,10 +299,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidFlux, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'fluid velocity' or variable == 'fv':
@@ -324,19 +315,12 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidVelocity, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'pressure gradient x' or variable == 'dpdx':
         for i in fracture_list:
-            # get the mesh (either stored there or retrieve from location)
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
-            else:
-                fr_mesh = i.mesh
+            fr_mesh = i.mesh
             dpdxLft = (i.pNet[i.EltCrack] - i.pNet[fr_mesh.NeiElements[i.EltCrack, 0]]) \
                       * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 0]]
             dpdxRgt = (i.pNet[fr_mesh.NeiElements[i.EltCrack, 1]] - i.pNet[i.EltCrack]) \
@@ -348,10 +332,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
 
     elif variable == 'pressure gradient y' or variable == 'dpdy':
         for i in fracture_list:
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
-            else:
-                fr_mesh = i.mesh
+            fr_mesh = i.mesh
             dpdyBtm = (i.pNet[i.EltCrack] - i.pNet[fr_mesh.NeiElements[i.EltCrack, 2]]) \
                       * i.InCrack[fr_mesh.NeiElements[i.EltCrack, 2]]
             dpdxtop = (i.pNet[fr_mesh.NeiElements[i.EltCrack, 3]] - i.pNet[i.EltCrack]) \
@@ -370,14 +351,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].fluidFlux_components[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.fluidFlux_components is not None:
+            elif fracture_list[i].fluidFlux_components is not None:
                 variable_list[i] = fracture_list[i].fluidFlux_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
@@ -389,14 +367,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].fluidVelocity_components[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.fluidFlux_components is not None:
+            elif fracture_list[i].fluidFlux_components is not None:
                 variable_list[i] = fracture_list[i].fluidVelocity_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'effective viscosity' or variable == 'ev':
@@ -408,14 +383,11 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].effVisc[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.effVisc is not None:
+            elif fracture_list[i].effVisc is not None:
                 variable_list[i] = np.mean(fracture_list[i].effVisc, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'yielded' or variable == 'y':
@@ -427,19 +399,17 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].yieldRatio[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.yieldRatio is not None:
+            elif fracture_list[i].yieldRatio is not None:
                 variable_list[i] = np.mean(fracture_list[i].yieldRatio, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
-                else:
-                    fr_mesh = i.mesh
+                fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):
         for i in range(len(fracture_list)):
             if isinstance(fracture_list[i].mesh, int):
+                raise ValueError("Why is the mesh property an integer?")
                 fr_mesh = fracture_list[fracture_list[i].mesh].mesh
             else:
                 fr_mesh = fracture_list[i].mesh
@@ -457,10 +427,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs[i] = fracture_list[i].time
     elif variable == 'mesh':
         for i in range(len(fracture_list)):
-            if isinstance(fracture_list[i].mesh, int):
-                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
-            else:
-                fr_mesh = fracture_list[i].mesh
+            fr_mesh = fracture_list[i].mesh
             variable_list[i] = fr_mesh
             time_srs[i] = fracture_list[i].time
 
@@ -495,10 +462,7 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
 
     elif variable == 'chi':
         for i in fracture_list:
-            if isinstance(i.mesh, int):
-                fr_mesh = fracture_list[i.mesh].mesh
-            else:
-                fr_mesh = i.mesh
+            fr_mesh = i.mesh
             vel = np.full((fr_mesh.NumberOfElts,), np.nan)
             vel[i.EltTip] = i.v
             variable_list.append(vel)
@@ -598,10 +562,7 @@ def get_fracture_variable_at_point(fracture_list, variable, point, edge=4, retur
     else:
         for i in range(len(fracture_list)):
             if variable in bidimensional_variables:
-                if isinstance(fracture_list[i].mesh, int):
-                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
-                else:
-                    fr_mesh = fracture_list[i].mesh
+                fr_mesh = fracture_list[i].mesh
                 try:
                     fr_mesh.locate_element(point[0][0], point[0][1])[0]
                 except TypeError:
@@ -1076,10 +1037,7 @@ def write_fracture_variable_csv_file(file_name, fracture_list, variable, point=N
         return_list = var_values
     else:
         for i in range(len(fracture_list)):
-            if isinstance(fracture_list[i].mesh, int):
-                fr_mesh = fracture_list[fracture_list[i].mesh].mesh
-            else:
-                fr_mesh = fracture_list[i].mesh
+            fr_mesh = fracture_list[i].mesh
             value_point = griddata(fr_mesh.CenterCoor,
                                    var_values[i],
                                    point,
@@ -1307,10 +1265,7 @@ def get_front_intercepts(fr_list, point):
     intercepts = []
 
     for fr in fr_list:
-        if isinstance(fr.mesh, int):
-            fr_mesh = fr_list[fr.mesh].mesh
-        else:
-            fr_mesh = fr.mesh
+        fr_mesh = fr.mesh
         intrcp_top = intrcp_btm = intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
         try:
             pnt_cell = fr_mesh.locate_element(point[0], point[1])   # the cell in which the given point lie
@@ -1482,10 +1437,7 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
 
     for jk in fr_list:
         # get the mesh (either stored there or retrieve from location)
-        if isinstance(jk.mesh, int):
-            fr_mesh = fr_list[jk.mesh].mesh
-        else:
-            fr_mesh = jk.mesh
+        fr_mesh = jk.mesh
 
         if len(jk.source) != 0:
             left, right = get_Ffront_as_vector(jk, fr_mesh.CenterCoor[jk.source[0], ::])[1:]
@@ -1691,10 +1643,7 @@ def get_local_geometry(Fr_list, points):
     for p in range(len(points)):
         for Fr in range(len(Fr_list)):
             # get the mesh (either stored there or retrieve from location)
-            if isinstance(Fr_list[Fr].mesh, int):
-                fr_mesh = Fr_list[Fr_list[Fr].mesh].mesh
-            else:
-                fr_mesh = Fr_list[Fr].mesh
+            fr_mesh = Fr_list[Fr].mesh
             fr = Fr_list[Fr]
             intrcp_lft = intrcp_rgt = [np.nan]  # set to nan if not available
             pnt_cell = fr_mesh.locate_element(points[p][0], points[p][1])  # the cell in which the given point lie
@@ -1775,10 +1724,7 @@ def get_fracture_head_volume(fr_list, geometric_data=None):
     iter = 0
     for jk in fr_list:
         # get the mesh (either stored there or retrieve from location)
-        if isinstance(jk.mesh, int):
-            fr_mesh = fr_list[jk.mesh].mesh
-        else:
-            fr_mesh = jk.mesh
+        fr_mesh = jk.mesh
         z_head = np.max(np.hstack((jk.Ffront[::, 1], jk.Ffront[::, 3])))-geometric_data['lhead'][iter]
         el_head_tip = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltTip, 1] >= z_head)).flatten()
         el_head_channel = np.asarray(np.where(fr_mesh.CenterCoor[jk.EltChannel, 1] >= z_head)).flatten()
@@ -1804,10 +1750,7 @@ def get_breadth_at_point(Fr_list, points):
     Az = init_list_of_objects(len(Fr_list))
     for p in range(len(points)):
         for Fr in range(len(Fr_list)):
-            if isinstance(fr.mesh, int):
-                fr_mesh = Fr_list[fr.mesh].mesh
-            else:
-                fr_mesh = fr.mesh
+            fr_mesh = Fr_list[Fr].mesh
             if p == 0:
                 breadth[Fr] = len(points) * [0.]
                 Az[Fr] = len(points) * [0.]
@@ -1897,10 +1840,6 @@ def get_fracture_fp(fr_list):
 
     for jk in fr_list:
         fr = copy.deepcopy(jk)
-        if isinstance(jk.mesh, int):
-            fr.mesh = fr_list[jk.mesh].mesh
-        else:
-            fr.mesh = jk.mesh
         if len(jk.source) != 0:
             fp_list.append(get_Ffront_as_vector(fr, fr.mesh.CenterCoor[jk.source[0], ::])[0])
         else:
@@ -1923,10 +1862,7 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
     fluid_vel_list = []
     time_srs = []
     for i in Fr_list:
-        if isinstance(i.mesh, int):
-            fr_mesh = Fr_list[i.mesh].mesh
-        else:
-            fr_mesh = i.mesh
+        fr_mesh = i.mesh
 
         fluid_flux, \
         fluid_vel, \
@@ -1999,10 +1935,7 @@ def get_velocity_slice(Solid, Fluid, Fr_list, initial_point, simProp, vel_direct
     list_of_fluid_vel_lists = []
 
     for i in range(nOFtimes): #each fr has its own mesh
-        if isinstance(Fr_list[i], int):
-            fr_mesh = Fr_list[Fr_list[i]].mesh
-        else:
-            fr_mesh = Fr_list[i].mesh
+        fr_mesh = Fr_list[i].mesh
         # 1) get the coordinates of the points in the slices
         vector_to_be_lost = np.zeros(fr_mesh.NumberOfElts,dtype=int)
         NotUsd_var_values, sampling_line_center, sampling_cells = get_fracture_variable_slice_cell_center(vector_to_be_lost,
@@ -2104,15 +2037,8 @@ def get_power_split(Solid, Fluid, SimProp, Fr_list, head_split=None): #AM 2022, 
         fr_im1 = Fr_list[i-1]   # fracture of the previous time step
 
         # - Export the mesh for both fractures - #
-        if isinstance(fr_i.mesh, int):
-            fr_i_mesh = Fr_list[fr_i.mesh]
-        else:
-            fr_i_mesh = fr_i.mesh
-
-        if isinstance(fr_im1.mesh, int):
-            fr_im1_mesh = Fr_list[fr_im1.mesh]
-        else:
-            fr_im1_mesh = fr_im1.mesh
+        fr_i_mesh = fr_i.mesh
+        fr_im1_mesh = fr_im1.mesh
 
         # * -- check if fr_i and fr_im1 have the same mesh -- * #
         # Note: The routine only works if we do not have re-meshing in between
