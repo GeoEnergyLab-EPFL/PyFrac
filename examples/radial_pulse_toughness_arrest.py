@@ -52,7 +52,7 @@ Fluid = FluidProperties(viscosity=viscosity)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e8                          # the time at which the simulation stops
+simulProp.finalTime = 1e6                          # the time at which the simulation stops
 simulProp.saveTSJump, simulProp.plotTSJump = 3, 3   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/Pulse")   # the disk address where the files are saved
 
