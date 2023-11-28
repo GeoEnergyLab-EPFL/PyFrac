@@ -642,7 +642,7 @@ class SimulationProperties:
         # defining the default time refinement
         self.adaptive_time_refinement = self.default_adaptive_time_refinement
 
-        # getting the has of the current git version
+        # getting the hash of the current git version
         self.gitHash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
     def default_terminating_criterion(self, fracture):
