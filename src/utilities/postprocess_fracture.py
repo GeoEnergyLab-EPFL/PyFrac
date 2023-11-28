@@ -2744,3 +2744,90 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells):
             output[split] = 0.
 
     return output
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+def get_closure_geometry(Fr_list, centre, layer_indices = None):
+    """This function calculates the geometry of a fracture during closure.
+
+    :param Fr_list: list of fracture objects to be analyzed - see related documentation
+    :param centre: the location around which closure is to be analyzed, must be a single point (list with two entries)
+    :param layer_indices: the indices of the elements within the zone to be analyzed (note that these need to be from
+                          the mesh encountered during the closure of the fracture)
+    :return: the value of the breadth, height and average radius during closure.
+    """
+    log = logging.getLogger('PyFrac.get_closure_geometry')
+
+    # We need to ensure that we have indices to analyze. Set them to all indices if none are provided.
+    if layer_indices == None:
+        layer_indices = np.arange(Fr_list[-1].mesh.NumberOfElts)
+
+    closing_breadth = np.zeros(len(Fr_list))        # Closed fracture radius in the horizontal direction
+    closing_height = np.zeros(len(Fr_list))         # Closed fracture radius in the vertical direction
+    closing_radius_min = np.zeros(len(Fr_list))     # Closed fracture minimum distance
+    closing_radius_average = np.zeros(len(Fr_list)) # Closed fracture average distance
+
+    height_rec = False      # boolean to say if the height has completely receded
+    breadth_rec = False     # boolean to say if the breadth has completely receded
+    fully_closed = False    # boolean to say if the fracture has fully closed
+
+    # We pre-assign a value to the closure
+    t_c = Fr_list[-1].time
+    tr_breadth = Fr_list[-1].time
+    tr_height = Fr_list[-1].time
+
+    for i in range(len(Fr_list)):
+        if len(np.intersect1d(Fr_list[i].closed, layer_indices)) != 0:
+            if isinstance(Fr_list[i].mesh, int):
+                mesh = Fr_list[Fr_list[i].mesh].mesh
+            else:
+                mesh = Fr_list[i].mesh
+
+            height_elements = layer_indices[np.where(mesh.CenterCoor[layer_indices, 1] == centre[1])]
+            breadth_elements = layer_indices[np.where(mesh.CenterCoor[layer_indices, 0] == centre[0])]
+
+            closed_height_elements = np.intersect1d(Fr_list[i].closed, height_elements)
+            if len(closed_height_elements) != 0:
+                if not height_rec:
+                    tr_height = Fr_list[i].time
+                    height_rec = True
+                c_c = mesh.CenterCoor[closed_height_elements]  # cell_center
+                r_c = np.asarray([np.linalg.norm(c_c[e] - centre) for e in range(len(c_c))])
+                closing_height[i] = r_c.min()
+
+            closed_breadth_elements = np.intersect1d(Fr_list[i].closed, breadth_elements)
+            if len(closed_breadth_elements) != 0:
+                if not breadth_rec:
+                    tr_breadth = Fr_list[i].time
+                    breadth_rec = True
+                c_c = mesh.CenterCoor[closed_breadth_elements]  # cell_center
+                r_c = np.asarray([np.linalg.norm(c_c[e] - centre) for e in range(len(c_c))])
+                closing_breadth[i] = r_c.min()
+            else:
+                c_c = mesh.CenterCoor[breadth_elements]  # cell_center
+                r_c = np.asarray([np.linalg.norm(c_c[e] - centre) for e in range(len(c_c))])
+                closing_breadth[i] = r_c.max()
+
+            if closing_breadth[i] == 0 and closing_height[i] == 0 and not fully_closed:
+                t_c = Fr_list[i-1].time
+                fully_closed = True
+
+            c_c = mesh.CenterCoor[np.intersect1d(Fr_list[i].closed, layer_indices)]  # cell_center
+            r_c = np.asarray([np.linalg.norm(c_c[e] - centre) for e in range(len(c_c))])
+            closing_radius_min[i] = r_c.min()
+            closing_radius_average[i] = np.mean(np.extract(r_c <= closing_radius_min[i] + mesh.cellDiag / 3., r_c))
+
+
+    # Here we issue a warning if the fracture is not fully closed
+    if not fully_closed:
+        log.warning("The fracture is not fully closed! Closure times might be wrong!")
+
+    closure_info = {'tc': t_c,
+            'tr_breadth': tr_breadth,
+            'tr_height': tr_height,
+            'closing_breadth': closing_breadth,
+            'closing_height': closing_height,
+            'closing_radius_min': closing_radius_min,
+            'closing_radius_avg': closing_radius_average}
+
+    return closure_info
