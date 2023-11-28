@@ -493,7 +493,7 @@ class SimulationProperties:
         The constructor of the SimulationParameters class. See documentation of the class.
 
         """
-
+        import subprocess
         import sys
         if "win32" in sys.platform or "win64" in sys.platform:
             slash = "\\"
@@ -641,6 +641,9 @@ class SimulationProperties:
 
         # defining the default time refinement
         self.adaptive_time_refinement = self.default_adaptive_time_refinement
+
+        # getting the hash of the current git version
+        self.gitHash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
 
     def default_terminating_criterion(self, fracture):
         # criterion based on the final time
