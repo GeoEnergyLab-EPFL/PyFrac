@@ -93,7 +93,8 @@ controller = Controller(Fr,
                         Fluid,
                         Injection,
                         simulProp)
-
+# Remove user interaction in case of batch_run
+controller.PstvInjJmp = True if os.path.isfile('./batch_run.txt') else None
 # run the simulation
 controller.run()
 
