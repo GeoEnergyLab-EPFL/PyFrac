@@ -344,7 +344,6 @@ class Controller:
                     self.sim_prop.solveDeltaP = False
                 else:
                     self.sim_prop.solveDeltaP = self.solveDetlaP_cp
-                self.PstvInjJmp = None
                 self.fullyClosed = False
 
                 # set front advancing back as set in simulation properties originally if velocity becomes available.
