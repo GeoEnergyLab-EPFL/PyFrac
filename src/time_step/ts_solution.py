@@ -285,13 +285,13 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     Fr_k_same_footprint = copy.deepcopy(Fr_k)
     admissibleExtraAttempts = int(sim_properties.get_volumeControl())
     # Fracture front loop to find the correct front location
-    while not convergedSUCCESS:
-        assert k <= sim_properties.maxFrontItrs + admissibleExtraAttempts, "Front iteration was leading to an infinite loop"
+    for k in range(sim_properties.maxFrontItrs + admissibleExtraAttempts):
         norm_history[k] = norm
         dwMAX_history[k] = dwMAX
-        k = k + 1
         log.debug(' ')
         log.debug('Iteration ' + repr(k))
+        if convergedSUCCESS:
+            break
         fill_frac_last = np.copy(Fr_k.FillF)
 
         # update the confining stress
@@ -367,12 +367,14 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                              'This can happen in case of an almost non-propagating fracture')
                 Fr_k = Fr_k_same_footprint
                 convergedSUCCESS = forcedConvergence = True
-                continue
+                break
 
         if not sim_properties.get_volumeControl():
             convergedSUCCESS = (
                 norm < sim_properties.tolFractFront
             )
+            if convergedSUCCESS:
+                break
         else:
             convergedSUCCESS = (
                 norm < sim_properties.tolFractFront
@@ -380,7 +382,7 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 and norm < previous_norm
             )
             if convergedSUCCESS:
-                continue
+                break
 
             if norm < sim_properties.tolFractFront and norm < previous_norm and not loop_already_forced:
                 log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
@@ -398,11 +400,11 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
             if k >= sim_properties.maxFrontItrs and force_1loop:
                 norm_history.resize(k+1)
                 dwMAX_history.resize(k+1)
-        if k >= sim_properties.maxFrontItrs and not force_1loop:
-            exitstatus = 6
-            return exitstatus, None
-
         previous_norm = norm
+
+    if k >= sim_properties.maxFrontItrs and not convergedSUCCESS:
+        exitstatus = 6
+        return exitstatus, None
 
     # check if we advanced more than two cells
     if exitstatus == 1:
