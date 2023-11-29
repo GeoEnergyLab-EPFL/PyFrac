@@ -279,13 +279,14 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     previous_norm = 100 # initially set with a big value
     loop_already_forced = False
     force_1loop = False
-    force_convergence = False
+    convergedSUCCESS = False
     norm_history = np.zeros(sim_properties.maxFrontItrs)
     dwMAX_history = np.zeros(sim_properties.maxFrontItrs)
     Fr_k_same_footprint = copy.deepcopy(Fr_k)
-
+    admissibleExtraAttempts = int(sim_properties.get_volumeControl())
     # Fracture front loop to find the correct front location
-    while (norm > sim_properties.tolFractFront or force_1loop) and not force_convergence:
+    while not convergedSUCCESS:
+        assert k <= sim_properties.maxFrontItrs + admissibleExtraAttempts, "Front iteration was leading to an infinite loop"
         norm_history[k] = norm
         dwMAX_history[k] = dwMAX
         k = k + 1
@@ -365,25 +366,23 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                              'Check if it makes sense to you. '
                              'This can happen in case of an almost non-propagating fracture')
                 Fr_k = Fr_k_same_footprint
-                force_convergence = True
+                convergedSUCCESS = forcedConvergence = True
+                continue
 
-        if sim_properties.get_volumeControl():
-            # preventing infinite or not effective loops
-            if (k >= sim_properties.maxFrontItrs and norm > 0.026) or k > 100:
-                if norm > 10 * sim_properties.tolFractFront or k > 200:
-                    exitstatus = 6
-                    return exitstatus, None
+        if not sim_properties.get_volumeControl():
+            convergedSUCCESS = (
+                norm < sim_properties.tolFractFront
+            )
+        else:
+            convergedSUCCESS = (
+                norm < sim_properties.tolFractFront
+                and loop_already_forced
+                and norm < previous_norm
+            )
+            if convergedSUCCESS:
+                continue
 
-            if norm < sim_properties.tolFractFront and loop_already_forced:
-                if norm < previous_norm:
-                    # the convergence has been achieved
-                    loop_already_forced = False
-                    force_1loop = False
-                else:
-                    # forcing another loop
-                    loop_already_forced = True
-                    force_1loop = True
-            elif norm < sim_properties.tolFractFront and not loop_already_forced:
+            if norm < sim_properties.tolFractFront and norm < previous_norm and not loop_already_forced:
                 log.debug(' --> Forcing one more loop to see if the convergence has been really achieved')
                 loop_already_forced = True
                 force_1loop = True
@@ -395,11 +394,13 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 # normal case
                 loop_already_forced = False
                 force_1loop = False
-        else:
-            # in case of not volume control
-            if (k >= sim_properties.maxFrontItrs):
-                exitstatus = 6
-                return exitstatus, None
+            # Be careful to reserve memory for the event of forced extra attempts
+            if k >= sim_properties.maxFrontItrs and force_1loop:
+                norm_history.resize(k+1)
+                dwMAX_history.resize(k+1)
+        if k >= sim_properties.maxFrontItrs and not force_1loop:
+            exitstatus = 6
+            return exitstatus, None
 
         previous_norm = norm
 
