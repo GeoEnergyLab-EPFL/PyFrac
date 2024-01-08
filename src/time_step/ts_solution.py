@@ -280,10 +280,10 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
     loop_already_forced = False
     force_1loop = False
     convergedSUCCESS = False
-    norm_history = np.zeros(sim_properties.maxFrontItrs)
-    dwMAX_history = np.zeros(sim_properties.maxFrontItrs)
-    Fr_k_same_footprint = copy.deepcopy(Fr_k)
     admissibleExtraAttempts = int(sim_properties.get_volumeControl())
+    norm_history = np.zeros(sim_properties.maxFrontItrs + admissibleExtraAttempts)
+    dwMAX_history = np.zeros(sim_properties.maxFrontItrs + admissibleExtraAttempts)
+    Fr_k_same_footprint = copy.deepcopy(Fr_k)
     # Fracture front loop to find the correct front location
     for k in range(sim_properties.maxFrontItrs + admissibleExtraAttempts):
         norm_history[k] = norm
@@ -396,10 +396,6 @@ def attempt_time_step(Frac, C, Boundary, mat_properties, fluid_properties, sim_p
                 # normal case
                 loop_already_forced = False
                 force_1loop = False
-            # Be careful to reserve memory for the event of forced extra attempts
-            if k >= sim_properties.maxFrontItrs and force_1loop:
-                norm_history.resize(k+1)
-                dwMAX_history.resize(k+1)
         previous_norm = norm
 
     if k >= sim_properties.maxFrontItrs and not convergedSUCCESS:
