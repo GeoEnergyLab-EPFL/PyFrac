@@ -25,7 +25,7 @@ from utilities.postprocess_fracture import load_fractures
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(0.3, 0.3, 41, 41, symmetric=False)
+Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 
 # solid properties
 nu = 0.4                            # Poisson's ratio
