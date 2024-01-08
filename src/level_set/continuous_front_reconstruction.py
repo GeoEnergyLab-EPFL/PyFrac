@@ -2002,13 +2002,13 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][2])]=mesh.NeiElements[current_cell_name][1]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][1])]=mesh.NeiElements[current_cell_name][2]
             else:
-                dict_of_possibilities[str(mesh.NeiElements[current_cell_name][1])] = mesh.NeiElements[current_cell_name][3]
+                dict_of_possibilities[str(mesh.NeiElements[current_cell_name][3])] = mesh.NeiElements[current_cell_name][1]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][1])] = mesh.NeiElements[current_cell_name][3]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][2])] = mesh.NeiElements[current_cell_name][0]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][0])] = mesh.NeiElements[current_cell_name][2]
         else: # orientation ==1
             if str(mesh.NeiElements[current_cell_name][1]) in dict_Ribbon.keys() and str(mesh.NeiElements[current_cell_name][3]) in dict_Ribbon.keys():
-                dict_of_possibilities[str(mesh.NeiElements[current_cell_name][1])] = mesh.NeiElements[current_cell_name][3]
+                dict_of_possibilities[str(mesh.NeiElements[current_cell_name][3])] = mesh.NeiElements[current_cell_name][1]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][1])] = mesh.NeiElements[current_cell_name][3]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][2])] = mesh.NeiElements[current_cell_name][0]
                 dict_of_possibilities[str(mesh.NeiElements[current_cell_name][0])] = mesh.NeiElements[current_cell_name][2]
