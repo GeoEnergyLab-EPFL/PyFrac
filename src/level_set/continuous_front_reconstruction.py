@@ -2038,13 +2038,11 @@ def get_next_cell_name(current_cell_name,previous_cell_name,FC_type,Args) :
             dict_of_possibilities[str(mesh.NeiElements[current_cell_name][3])] = mesh.NeiElements[current_cell_name][0]
         else: raise SystemExit('FRONT RECONSTRUCTION ERROR: Wrong orientation')
 
-    try:
-        if str(previous_cell_name) not in dict_of_possibilities.keys():
-            raise RuntimeError
-        else:
-            return dict_of_possibilities[str(previous_cell_name)]
-    except RuntimeError:
+    if str(previous_cell_name) not in dict_of_possibilities.keys():
         log.debug("The previous fictitious cell is not neighbour of the current fictitious cell")
+        raise RuntimeError
+    else:
+        return dict_of_possibilities[str(previous_cell_name)]
 
 def get_next_cell_name_from_first(first_cell_name,FC_type,mesh,sgndDist_k):
     """
