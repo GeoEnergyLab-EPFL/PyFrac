@@ -5,10 +5,16 @@
 Pipfile.lock
 .venv
 venv
+build
+*.egg-info
+dist/*
+.env
+Pipfile*
 
 # IDEs
 .idea
 .vscode
+.gitdev
 
 # OS litter
 *.DS_Store
@@ -30,3 +36,4 @@ coverage.xml
 
 # Pyfrac conventions
 Data
+examples/batch_run.txt
