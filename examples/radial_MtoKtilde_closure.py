@@ -67,8 +67,8 @@ log.info("phi^v = " + str(phi_v) + " and omega = " + str(omega))
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 5.25e3                        # the time at which the simulation stops
-simulProp.saveTSJump, simulProp.plotTSJump = 2, 5   # save and plot after every 5 time steps
+simulProp.finalTime = 1e4                           # the time at which the simulation stops
+simulProp.saveTSJump, simulProp.plotTSJump = 1, 5   # save and plot after every 5 time steps
 simulProp.set_outputFolder("./Data/MtoK_leakoff")   # the disk address where the files are saved
 simname = 'phi_0o1'
 simulProp.set_simulation_name(simname)              # set the name of the simulation
@@ -154,7 +154,7 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
     parameters_r, _ = curve_fit(square_fit, t_prime[index_closure - len_fit:index_closure],
                                 r_tot[index_rec:][index_closure - len_fit:index_closure] / r_tot[index_rec])
     parameters_w, _ = curve_fit(line_fit, t_prime[index_closure - len_fit:index_closure],
-                                r_tot[index_rec:][index_closure - len_fit:index_closure] / r_tot[index_rec])
+                                w0[index_rec:][index_closure - len_fit:index_closure] / w0[index_rec])
 
     # plotting efficiency
     plot_prop = PlotProperties(graph_scaling='loglog',
@@ -172,8 +172,8 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
     fig.suptitle('Plots of radius and opening evolution')
     fig.set_figwidth(10)
     ax1.scatter(time_srs, r_tot)
-    ax2.scatter(time_srs, w0 * 1000) # to get the opening in [mm]
     ax1.set(xlabel='time since injection (s)', ylabel='fracture radius (m)')
+    ax2.scatter(time_srs, w0 * 1000)  # to get the opening in [mm]
     ax2.set(xlabel='time since injection (s)', ylabel='fracture opening at centre wo (mm)')
 
     # We plot the emergence of the sunset solution by plotting the opening towards closure.
@@ -185,9 +185,9 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
     ax4.scatter(t_prime,  w0[index_rec:] / w0[index_rec])
     ax4.plot(t_prime, line_fit(t_prime, parameters_w[0]), 'r', label='Fitted line')
     ax4.set(xlabel='t`', ylabel='wo / wo at recession')
-    ax4.set_ylim([0, 1.1])
     ax3.set(xlabel='t`', ylabel='fracture radius / radius when recession starts')
     ax3.set_xscale('log')
     ax3.set_yscale('log')
+    ax3.set_ylim([0.1, max(r_tot[index_rec:] / r_tot[index_rec]) * 1.1])
 
     plt.show(block=True)
