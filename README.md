@@ -9,9 +9,11 @@ PyFrac is free software: you can redistribute it and/or modify it under the term
 
 You should have received a copy of the GNU General Public License along with PyFrac. If not, see <http://www.gnu.org/licenses/>.
 
+[![DOI](https://zenodo.org/badge/234517841.svg)](https://zenodo.org/doi/10.5281/zenodo.10794247)
+
 ## Contributors
 
-- Haseeb Zia (2016-)
+- Haseeb Zia (2016-2020)
 - Carlo Peruzzo (2019-)
 - Andreas Mori (2019-)
 - Brice Lecampion (2016-)
@@ -31,9 +33,6 @@ You should have received a copy of the GNU General Public License along with PyF
 ## Support
 
 We do not have the capacities to provide support, but will do our best to address users questions. 
-To do so, we have created a Slack channel for PyFrac where you can post questions. 
-You can join the channel via the following link:
-https://join.slack.com/t/pyfrac/shared_invite/zt-hqt8wg1w-_7YC4PBNitp7C~a_0ygm~A
 
 Bugs should be reported as issues via GitHub.
 
