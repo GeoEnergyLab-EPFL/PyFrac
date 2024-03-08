@@ -188,6 +188,9 @@ def load_fractures(address=None, sim_name='simulation', time_period=0.0, time_sr
 
     #--- loop over the rest ---#
     for num, fr in enumerate(fracture_list):
+        if not hasattr(fr.mesh, "domainLimits") and not isinstance(fr.mesh, Dict):
+            fr.mesh.domainLimits = fracture_list[num].mesh.domainLimits = np.asarray([-fr.mesh.Ly, fr.mesh.Ly,
+                                                                                      -fr.mesh.Lx, fr.mesh.Lx])
         if num != 0:
             if isinstance(fr.mesh, Dict):
                 if not ((fr.mesh["domain Limits"] == intDict["domain Limits"]).all() and
@@ -1933,7 +1936,7 @@ def get_velocity_as_vector(Solid, Fluid, Fr_list, SimProp): #CP 2020
         Rey_num, \
         fluid_flux_components, \
         fluid_vel_components = calculate_fluid_flow_characteristics_laminar(i.w,
-                                                                            i.pFluid,
+                                                                            i.pNet,
                                                                             Solid.SigmaO,
                                                                             fr_mesh,
                                                                             i.EltCrack,
@@ -2203,6 +2206,7 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
     """
 
     from level_set.continuous_front_reconstruction import findangle
+    import math
 
     # * -- Export some required values -- * #
     viscosity = Fluid.viscosity             # the viscosity of the fluid
@@ -2232,8 +2236,8 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
             elif not ID in fr_i.EltTip:
                 for nei, neiID in enumerate(fr_i_mesh.NeiElements[ID]):
                     if neiID not in fr_i.EltTip:
-                        sqVx[i] += fluid_vel[2 * nei, crack_ind]**2
-                        sqVy[i] += fluid_vel[2 * nei + 1, crack_ind]**2
+                        sqVx[i] += fluid_vel[2 * nei, crack_ind] ** 2
+                        sqVy[i] += fluid_vel[2 * nei + 1, crack_ind] ** 2
                     else:
                         tip_ind = np.where(fr_i.EltTip == neiID)[0][0]  # tip index
                         coord_zero_vertex = fr_i_mesh.VertexCoor[fr_i_mesh.Connectivity[neiID][fr_i.ZeroVertex[tip_ind]]]
@@ -2251,11 +2255,14 @@ def get_Viscous_P(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
                         sqVx[i] += (np.cos(angle) * fr_i.v[tip_ind]) ** 2
                         sqVy[i] += (np.sin(angle) * fr_i.v[tip_ind]) ** 2
 
-                sqV[i] = sqVx[i]/4 + sqVy[i]/4
+                sqV[i] = sqVx[i] / 4 + sqVy[i] / 4
                 Viscous_P_vec[i] = sqV[i]/w[crack_ind]
             else:
                 tip_ind = np.where(fr_i.EltTip == ID)[0][0]
-                Viscous_P_vec[i] = fr_i.FillF[tip_ind]*fr_i.v[tip_ind]**2 / w[crack_ind]
+                Viscous_P_vec[i] = fr_i.FillF[tip_ind]*fr_i.v[tip_ind] ** 2 / w[crack_ind]
+
+            if math.isinf(abs(Viscous_P_vec[i])):
+                Viscous_P_vec[i] = 0.
 
         # * -- Calculate the final viscous dissipation -- * #
         output[split] = cell_area * 12 * viscosity * np.sum(Viscous_P_vec)
@@ -2615,6 +2622,12 @@ def get_External_gravity(fr_i, Fluid, Solid, SimProp, fr_i_mesh, x, y, cells):
     fluid_vel = fluid_vel_list[0]
 
     output = [0.] * len(cells)
+
+    # * -- When gravity is not turned on this is zero -- * #
+    if not SimProp.gravity:
+        return output
+
+
     # * -- We extract the averaged square of the velocity and calculate the local component of the dissipation -- * #
     for split in range(len(cells)):
         common_cells = np.intersect1d(fr_i.EltCrack, cells[split])
@@ -2727,7 +2740,7 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells):
 
                 # - We average the tractions between two time-steps - #
                 # fr_i.LkOff stores the leaked volume during the last time step of this cell.
-                pf_avg = (fr_i.pFluid[ID] + fr_im1.pFluid[ID]) / 2
+                pf_avg = (fr_i.pNet[ID] + fr_im1.pNet[ID]) / 2
 
                 # - Switch in function of the cell being a channel or a tip element - #
                 if not ID in fr_i.EltTip:
@@ -2738,7 +2751,7 @@ def get_leakOff_P(fr_im1, fr_i, fr_i_mesh, Solid, cells):
                     leakOff_P_vec[i] = fr_i.FillF[tip_ind] * v_lkOff * pf_avg
 
             # * -- Export the total dissipated power -- * #
-            output[split] = 2 * cell_area * np.sum(leakOff_P_vec)
+            output[split] = cell_area * np.sum(leakOff_P_vec)
         else:
             # - If no leak-off is there the dissipated power is simply zero - #
             output[split] = 0.
