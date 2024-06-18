@@ -1490,6 +1490,9 @@ def get_fracture_geometric_parameters(fr_list, head=True, lateral_diking=False):
         else:
             fr_mesh = jk.mesh
 
+        if not hasattr(jk, "source"):
+            jk.source = [fr_mesh.locate_element(0.0, 0.0)[0]]
+
         if len(jk.source) != 0:
             left, right = get_Ffront_as_vector(jk, fr_mesh.CenterCoor[jk.source[0], ::])[1:]
         else:
