@@ -38,7 +38,7 @@ Bugs should be reported as issues via GitHub.
 
 ## Getting started
 
-Running PyFrac will require a functioning installation of Python 3, numpy, SciPy and matplotlib. You can download ANACONDA distribution with all these packages from <https://www.anaconda.com/distribution/>. To run PyFrac using Unix shell or windows command prompt, the directory containing the PyFrac source code is required to be added to the ``PYTHONPATH`` environment variable. It can be added with the following command on windows (give the local path of the ``src`` folder in place of path_of_PyFrac_src):
+Running PyFrac will require a functioning installation of Python 3, numpy, SciPy and matplotlib. To run PyFrac using Unix shell or windows command prompt, the directory containing the PyFrac source code is required to be added to the ``PYTHONPATH`` environment variable. It can be added with the following command on windows (give the local path of the ``src`` folder in place of path_of_PyFrac_src):
 
     set PYTHONPATH=%PYTHONPATH%;path_of_PyFrac_src
 
