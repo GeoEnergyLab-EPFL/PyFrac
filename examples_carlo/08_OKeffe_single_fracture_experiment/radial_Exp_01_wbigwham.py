@@ -1,0 +1,129 @@
+# -*- coding: utf-8 -*-
+"""
+Created by Carlo Peruzzo.
+Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory", 2016-2019.
+All rights reserved. See the LICENSE.TXT file for more details.
+"""
+
+import numpy as np
+
+# local imports
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+
+run = True
+plot = False
+if run:
+    # creating mesh
+    # creating mesh
+    Mesh = CartesianMesh(0.0075, 0.0075, 101, 101)
+
+    # solid properties
+    nu = 0.5                            # Poisson's ratio
+    Eprime = 165000   # plain strain modulus
+    youngs_mod = Eprime * (1 - nu**2)   # Young's modulus
+    gammas= 4.4                         # J/m^2 surface energy
+    K1c = np.sqrt(2*gammas*Eprime)         # fracture toughness (+/- 1)
+    Cl = 0.                             # Carter's leak off coefficient
+
+    # material properties
+    Solid = MaterialProperties(Mesh,
+                               Eprime,
+                               K1c,
+                               Carters_coef=Cl)
+
+    # injection parameters
+    Q0 = 15/1000/60/1000  # injection rate
+    Injection = InjectionProperties(Q0, Mesh)
+
+    # fluid properties
+    viscosity = 0.1 # Pa.s
+    Fluid = FluidProperties(viscosity=viscosity)
+
+    # simulation properties
+    simulProp = SimulationProperties()
+    simulProp.finalTime = 90                           # the time at which the simulation stops
+    simulProp.saveTSJump = 1e8   
+    simulProp.set_outputFolder("./Data/Exp_01_single_fracture_bigwham")   # the disk address where the files are saved
+    simulProp.frontAdvancing = 'implicit'               # setting up explicit front advancing
+    simulProp.projMethod = 'LS_continousfront'
+
+    # Using bigwham 
+    simulProp.useHmat = True
+
+    # ensure that the flow matrices are store as sparse
+    simulProp.solveSparse = True 
+    
+    # use iterative solvers rather than direct solvers
+    simulProp.EHL_iter_lin_solve = True
+    
+    # No plotting
+    simulProp.plotTSJump = 1e8
+    simulProp.plotFigure = False
+    
+    # simulProp.maxTimeSteps = 20
+    simulProp.verbositylevel = "INFO"
+
+    # initializing fracture
+    Fr_geometry = Geometry('radial',radius=0.002)
+    init_param = InitializationParameters(Fr_geometry)
+
+    # creating fracture object
+    Fr = Fracture(Mesh,
+                  init_param,
+                  Solid,
+                  Fluid,
+                  Injection,
+                  simulProp)
+
+
+    # create a Controller
+    controller = Controller(Fr,
+                            Solid,
+                            Fluid,
+                            Injection,
+                            simulProp)
+
+    # run the simulation
+    controller.run()
+
+
+####################
+# plotting results #
+####################
+if plot:
+    from pyfrac.utilities.visualization import *
+    from pyfrac.utilities.postprocess_fracture import *
+
+    # loading simulation results
+    Fr_list, properties = load_fractures("./Data/Exp_01_single_fracture")
+    Solid, Fluid, Injection, simulProp = properties
+    time_srs = get_fracture_variable(Fr_list, variable='time')                      # list of times
+
+    # plot fracture radius
+    plot_prop = PlotProperties()
+    plot_prop.lineStyle = '.'               # setting the line style to point
+    plot_prop.graphScaling = 'loglog'       # setting to log log plot
+    Fig_R = plot_fracture_list(Fr_list,
+                               variable='d_mean',
+                               plot_prop=plot_prop)
+    # plot analytical radius
+    Fig_R = plot_analytical_solution(regime='M',
+                                     variable='d_mean',
+                                     mat_prop=Solid,
+                                     inj_prop=Injection,
+                                     fluid_prop=Fluid,
+                                     time_srs=time_srs,
+                                     fig=Fig_R)
+    # plot analytical radius
+    Fig_R = plot_analytical_solution(regime='K',
+                                     variable='d_mean',
+                                     mat_prop=Solid,
+                                     inj_prop=Injection,
+                                     fluid_prop=Fluid,
+                                     time_srs=time_srs,
+                                     fig=Fig_R)
+    plt.show(block=True)

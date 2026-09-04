@@ -12,14 +12,14 @@ import os
 from matplotlib import pyplot as plt
 
 # local imports
-from mesh_obj.mesh import CartesianMesh
-from solid.solid_prop import MaterialProperties
-from fluid.fluid_prop import FluidProperties
-from properties import InjectionProperties, SimulationProperties
-from fracture_obj.fracture import Fracture
-from controller import Controller
-from fracture_obj.fracture_initialization import Geometry, InitializationParameters
-from utilities.utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.utility import setup_logging_to_console
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='debug')
@@ -135,7 +135,7 @@ if run:
 
     # building elasticity matrix
     simulProp.useBlockToeplizCompression = True
-    from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+    from pyfrac.solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
     C = load_isotropic_elasticity_matrix_toepliz(Mesh, Eprime)
 
     init_param = InitializationParameters(Fr_geometry, regime='static', net_pressure=5e2, elasticity_matrix=C) #time=2.5
@@ -151,7 +151,7 @@ if run:
     Fr.pInjLine = Fr.pFluid[Mesh.CenterElts]
 
     if restart:
-        from utilities.postprocess_fracture import load_fractures
+        from pyfrac.utilities.postprocess_fracture import load_fractures
         Fr_list, properties = load_fractures("./Data/injection_line",
                                              sim_name='block4_ts_0.2_r_1.45')
         Solid, Fluid, Injection, simulProp = properties
@@ -172,8 +172,8 @@ if run:
 ####################
 # plotting results #
 ####################
-from utilities.visualization import *
-from utilities.postprocess_fracture import load_fractures
+from pyfrac.utilities.visualization import *
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 results_folder = "./Data/injection_line_restarted"
 results_folder = "./Data/injection_line"

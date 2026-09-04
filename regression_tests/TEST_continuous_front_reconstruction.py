@@ -10,12 +10,12 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import pytest
 import numpy as np
 
-from level_set.continuous_front_reconstruction import ray_tracing_numpy
-from level_set.continuous_front_reconstruction import find_indexes_repeatd_elements
-from level_set.continuous_front_reconstruction import Point
-from level_set.continuous_front_reconstruction import distance
-from level_set.continuous_front_reconstruction import copute_area_of_a_polygon
-from level_set.continuous_front_reconstruction import pointtolinedistance
+from pyfrac.level_set.continuous_front_reconstruction import ray_tracing_numpy
+from pyfrac.level_set.continuous_front_reconstruction import find_indexes_repeatd_elements
+from pyfrac.level_set.continuous_front_reconstruction import Point
+from pyfrac.level_set.continuous_front_reconstruction import distance
+from pyfrac.level_set.continuous_front_reconstruction import copute_area_of_a_polygon
+from pyfrac.level_set.continuous_front_reconstruction import pointtolinedistance
 
 
 def test_ray_tracing_numpy():

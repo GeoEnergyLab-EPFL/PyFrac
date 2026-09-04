@@ -161,7 +161,7 @@ def SolveFMM(levelSet, EltRibbon, EltChannel, mesh, farAwayPstv, farAwayNgtv):
                        levelSet[neighbors[3]], 1, mesh.hx, mesh.hy)  # arguments for the eikonal equation function
             guess = np.max(levelSet[neighbors])  # initial starting guess for the numerical solver
             levelSet[farAwayNgtv[unevaluated[i]]] = fsolve(Eikonal_Res, guess, args=Eikargs)  # numerical solver
-# from visualization import plot_fracture_variable_as_image
+# from pyfrac.utilities.visualization import plot_fracture_variable_as_image
 # import matplotlib.pyplot as plt
 # fig = plt.figure()
 # ax = fig.add_subplot(111)

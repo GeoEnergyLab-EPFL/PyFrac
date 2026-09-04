@@ -11,16 +11,16 @@ reserved. See the LICENSE.TXT file for more details.
 import os
 
 # local imports
-from mesh_obj.mesh import CartesianMesh
-from solid.solid_prop import MaterialProperties
-from fluid.fluid_prop import FluidProperties
-from properties import InjectionProperties, SimulationProperties
-from fracture_obj.fracture import Fracture
-from controller import Controller
-from fracture_obj.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
-from solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
-from utilities.utility import setup_logging_to_console
-from utilities.postprocess_fracture import load_fractures
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters, get_eliptical_survey_cells
+from pyfrac.solid.elasticity_kernels.isotropic_R0_elem import load_isotropic_elasticity_matrix
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -110,7 +110,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from utilities.visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     time_srs = np.linspace(1, 1e4, 7)

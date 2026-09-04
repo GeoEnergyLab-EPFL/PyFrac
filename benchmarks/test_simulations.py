@@ -13,14 +13,14 @@ import shutil
 
 # Internal imports
 from benchmarks.simulparam_and_tolerances import *
-from mesh_obj.mesh import CartesianMesh
-from solid.solid_prop import MaterialProperties
-from fluid.fluid_prop import FluidProperties
-from properties import InjectionProperties, SimulationProperties
-from fracture_obj.fracture import Fracture
-from controller import Controller
-from fracture_obj.fracture_initialization import Geometry, InitializationParameters
-from utilities.visualization import *
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.visualization import *
 
 def pytest_generate_tests(metafunc):
     # called once per each test function
@@ -158,13 +158,13 @@ class TestClass:
         # checking the results #
         ########################
 
-        from utilities.postprocess_fracture import get_fracture_dimensions_analytical_with_properties
-        from utilities.postprocess_fracture import get_HF_analytical_solution_at_point
-        from utilities.postprocess_fracture import get_fracture_variable_at_point
-        from utilities.postprocess_fracture import load_fractures
-        from utilities.visualization import get_fracture_variable
-        from utilities.visualization import plot_fracture_list_slice
-        from properties import LabelProperties
+        from pyfrac.utilities.postprocess_fracture import get_fracture_dimensions_analytical_with_properties
+        from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution_at_point
+        from pyfrac.utilities.postprocess_fracture import get_fracture_variable_at_point
+        from pyfrac.utilities.postprocess_fracture import load_fractures
+        from pyfrac.utilities.visualization import get_fracture_variable
+        from pyfrac.utilities.visualization import plot_fracture_list_slice
+        from pyfrac.properties import LabelProperties
 
         # loading simulation results
         Fr_list, properties = load_fractures(address=outputfolder)  # load all fractures
@@ -230,7 +230,7 @@ class TestClass:
                 i) + " the solution for the Fracture opening is too far from the analytical"
 
         ####### useful for debugging ###
-        # from visualization import *
+        # from pyfrac.utilities.visualization import *
         # plot_prop = PlotProperties()
         # plot_prop.lineStyle = '.'  # setting the line style to point
         # plot_prop.graphScaling = 'loglog'  # setting to log log plot
@@ -267,7 +267,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from utilities.postprocess_fracture import get_HF_analytical_solution
+            from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('w', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'w',
@@ -300,7 +300,7 @@ class TestClass:
             assert diff_total_vs_time[i] < toll['w_section_toll_cumulative_value'][i]
 
         ####### useful for debugging ###
-        # from visualization import *
+        # from pyfrac.utilities.visualization import *
         # # plot slice
         # ext_pnts = np.empty((2, 2), dtype=np.float64)
         # Fig_WS = plot_fracture_list_slice(Fr_list,
@@ -334,7 +334,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from utilities.postprocess_fracture import get_HF_analytical_solution
+            from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('pn', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'pn',

@@ -11,8 +11,8 @@ All rights reserved. See the LICENSE.TXT file for more details.
 import numpy as np
 
 # internal imports
-from mesh_obj.mesh import CartesianMesh
-from solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
 
 def test_get_traction_R0_kernel():
     nu = 0.4                            # Poisson's ratio
