@@ -22,50 +22,76 @@ using namespace std;
 
 int main() {
 
-//Read the elastic parameters
+    //  Read the elastic parameters
     ifstream i("stiffness_matrix.json");
     json j;
     i >> j;
 
 
-//    Read the mesh parameters
+    //  Read the mesh parameters
     double Lx= j["Mesh"]["L1"].get<double>();
     double Ly= j["Mesh"]["L3"].get<double>();
     int nx= j["Mesh"]["n1"].get<int>();
     int ny= j["Mesh"]["n3"].get<int>();
 
 
-//create mesh (Lx,Ly,nx,ny)
+    //  create mesh (Lx, Ly, nx, ny)
     hfp3d::Mesh mesh1=hfp3d::create_Mesh(Lx,  Ly, nx,  ny);
+
+
+    //  open the output file
     ofstream outputFile;
     outputFile.open("StrainResult.bin",ios::binary);
+
+
+    //  get the elastic parameters of the elasticity matrix
     il::Array<double>  Ce{hfp3d::Cmatrix("stiffness_matrix.json")};
-    il::Array2D<double> global;
-    if( ((Ce[0] == Ce[3])&&(Ce[2]==Ce[1])&&(Ce[4]==0.5*(Ce[0]-Ce[1]))) ) {
+
+
+    // in what follows "global" is the array where to save the matrix that hsa been created
+
+
+    if(( (Ce[0]==Ce[3]) && (Ce[2]==Ce[1]) && (Ce[4]==0.5*(Ce[0]-Ce[1])) )) {
+
         // if condition is true then the isotropic case
            cout << "Isotropic case;" << "\n";
-        //Plain strain Modulus
+
+        // Plain strain Modulus
         double Ep=(Ce[0]-Ce[1])*(Ce[0]+Ce[1])/Ce[0];
 
-        //calculate the elasticity matrix
-        global = hfp3d::CIMatrix(mesh1, Ep);
+        // calculate the Isotropic elasticity matrix
+        il::Array2D<double> global = hfp3d::CIMatrix(mesh1, Ep);
 
-
-        //calculate the elasticity matrix
+        // output the Isotropic elasticity matrix to file
         for (int i=0;i<(nx*ny);i++){
             for (int j=0;j<(nx*ny);j++) {
                 outputFile.write((char *) (&(global(i,j))), sizeof(global(i,j)));
             }
         }
     } else {
-        // if condition is false then print the following
+
+        // if condition is true then transverse isotropic case
         cout << "Transverse Isotropic case;" << "\n";
 
-        //calculate the elasticity matrix
-        global = hfp3d::perpendicular_opening_assembly(mesh1);
-        for (int i=0;i<(nx*ny);i++){
-            for (int j=0;j<(nx*ny);j++) {
-                outputFile.write((char *) (&(global(i,j))), sizeof(global(i,j)));
+        //  Read the options
+        bool return_toeplitz_compression= j["Options"]["toeplitz_compr"].get<bool>();
+
+        if(return_toeplitz_compression) {
+            cout << "---> toeplitz compression;" << "\n";
+            // return the vector containing the influences of a corner point of the mesh
+            // with all the other points
+            il::Array<double> global = hfp3d::make_vector_perp_1D(mesh1);
+            for (int i=0;i<(nx*ny);i++){
+                    outputFile.write((char *) (&(global[i])), sizeof(global[i]));
+            }
+        } else {
+            cout << "---> computing the full matrix;" << "\n";
+            // calculate the whole elasticity matrix
+            il::Array2D<double> global = hfp3d::perpendicular_opening_assembly(mesh1);
+            for (int i=0;i<(nx*ny);i++){
+                for (int j=0;j<(nx*ny);j++) {
+                    outputFile.write((char *) (&(global(i,j))), sizeof(global(i,j)));
+                }
             }
         }
     }

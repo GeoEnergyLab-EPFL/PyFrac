@@ -7,20 +7,24 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import os
+import numpy as np
+import math
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-import math
-from utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
-setup_logging_to_console(verbosity_level='info')
+setup_logging_to_console(verbosity_level='debug')
 
 # creating mesh
 Mesh = CartesianMesh(0.65, 0.65, 69, 69)
@@ -32,8 +36,15 @@ Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 K_Ic1 = 5.6e6                       # fracture toughness
 
 
-def My_KIc_func(x, y):
+def My_KIc_func(x, y, alpha):
     """ The function providing the fracture toughness"""
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
+
     return K_Ic1
 
 
@@ -79,7 +90,7 @@ Solid = MaterialProperties(Mesh,
 
 
 # injection parameters
-Q0 = 0.001  # injection rate
+Q0 = 0.01  # injection rate
 Injection = InjectionProperties(Q0, Mesh)
 
 # fluid properties
@@ -129,7 +140,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'):  # We only visualize for runs of specific examples
 
-    from visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     Fr_list, properties = load_fractures(address="./Data/stress_heterogeneities",step_size=10)                  # load all fractures

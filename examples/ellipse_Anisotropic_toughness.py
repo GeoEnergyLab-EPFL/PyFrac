@@ -7,17 +7,20 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from visualization import *
-from utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.visualization import *
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -31,7 +34,14 @@ youngs_mod = 3.3e10                 # Young's modulus
 Eprime = youngs_mod / (1 - nu ** 2) # plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion 2018)
-def K1c_func(alpha):
+def K1c_func(x,y,alpha):
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
+
     K1c_1 = 1.e6                    # fracture toughness along x-axis
     K1c_2 = 1.414e6                 # fracture toughness along y-axis
 
@@ -60,10 +70,10 @@ simulProp.set_outputFolder("./Data/ellipse") # the disk address where the files 
 simulProp.set_simulation_name('anisotropic_toughness_benchmark')
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.projMethod = 'ILSA_orig'
-simulProp.set_tipAsymptote('U')
+simulProp.set_tipAsymptote('U1')
 
 # initializing fracture
-gamma = (K1c_func(np.pi/2) / K1c_func(0))**2    # gamma = (Kc1/Kc3)**2
+gamma = (K1c_func(0.,0.,np.pi/2) / K1c_func(0.,0.,0.))**2    # gamma = (Kc1/Kc3)**2
 Fr_geometry = Geometry('elliptical',
                        minor_axis=2.,
                        gamma=gamma)
@@ -94,7 +104,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     time_srs = np.geomspace(1, 500, 8)

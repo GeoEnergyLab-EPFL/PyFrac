@@ -7,24 +7,27 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import numpy as np
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from elasticity import load_isotropic_elasticity_matrix_toepliz
-from utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.solid.elasticity_isotropic import load_isotropic_elasticity_matrix_toepliz
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
 
 # creating mesh
-Mesh = CartesianMesh(425, [-425, 455], 14, 15)
+Mesh = CartesianMesh(425, [-425, 455], 13, 15)
 
 # solid properties
 nu = 0.25                           # Poisson's ratio
@@ -77,6 +80,7 @@ simulProp.set_mesh_extension_direction(['top', 'horizontal'])   # allow the frac
 simulProp.set_mesh_extension_factor(1.2)                        # set the extension factor to 1.4
 simulProp.useBlockToeplizCompression = True                     # use the Toepliz elasticity matrix to save memory
 
+
 # initializing a static fracture
 C = load_isotropic_elasticity_matrix_toepliz(Mesh, Solid.Eprime)
 Fr_geometry = Geometry('radial', radius=300)
@@ -109,7 +113,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     time_srs = np.asarray([50, 350,  700, 1100, 2500, 12000, 50000, 560000])
@@ -119,10 +123,11 @@ if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specif
                                      variable='time')
 
     # plot footprint
+    Fig_FP = None
     Fig_FP = plot_fracture_list(Fr_list,
                                 variable='mesh',
                                 projection='2D',
-                                mat_properties=properties[0],
+                                mat_properties=Solid,
                                 backGround_param='confining stress')
     plt_prop = PlotProperties(plot_FP_time=False)
     Fig_FP = plot_fracture_list(Fr_list,

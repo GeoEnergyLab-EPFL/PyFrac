@@ -7,16 +7,19 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -44,11 +47,14 @@ Fluid = FluidProperties(viscosity=1.1e-3)
 
 # simulation properties
 simulProp = SimulationProperties()
-simulProp.finalTime = 1e5                           # the time at which the simulation stops
+simulProp.finalTime = 3e-3 # 1e5                           # the time at which the simulation stops
 simulProp.set_tipAsymptote('M')                     # tip asymptote is evaluated with the viscosity dominated assumption
 simulProp.frontAdvancing = 'explicit'               # to set explicit front tracking
 simulProp.saveTSJump, simulProp.plotTSJump = 5, 5   # save and plot after every five time steps
 simulProp.set_outputFolder("./Data/M_radial_explicit") # the disk address where the files are saved
+
+# simulProp.useBlockToeplizCompression = False 
+simulProp.useHmat = True
 
 # initialization parameters
 Fr_geometry = Geometry('radial', radius=0.1)
@@ -75,13 +81,15 @@ controller = Controller(Fr,
 # run the simulation
 controller.run()
 
+exit()
+
 ####################
 # plotting results #
 ####################
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     Fr_list, properties = load_fractures(address="./Data/M_radial_explicit")        # load all fractures

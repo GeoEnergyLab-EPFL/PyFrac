@@ -57,7 +57,7 @@ Let us also superimpose fracture footprint to know where the fracture front is l
 
 .. code-block:: python
 
-    from properties import PlotProperties
+    from pyfrac.properties import PlotProperties
 
     plot_properties = PlotProperties(line_color='tomato')
     Fig = Fr.plot_fracture(variable='footprint', fig=Fig, projection='2D', plot_prop=plot_properties)
@@ -97,8 +97,8 @@ Note that we have not provided any time series. In this case, all of the fractur
 
 .. code-block:: python
 
-    from properties import PlotProperties
-    from visualization import plot_fracture_list
+    from pyfrac.properties import PlotProperties
+    from pyfrac.utilities.visualization import plot_fracture_list
 
     plot_prop = PlotProperties(line_style='.', graph_scaling='loglog')
     Fig_R = plot_fracture_list(Fr_list,
@@ -137,7 +137,7 @@ PyFrac provides the capability to plot analytical solutions available in a numbe
 .. code-block:: python
 
     from postprocess_fracture import get_fracture_variable
-    from visualization import plot_analytical_solution
+    from pyfrac.utilities.visualization import plot_analytical_solution
 
     time_srs = get_fracture_variable(Fr_list, variable='time')
     Fig_R = plot_analytical_solution(regime='M',
@@ -152,7 +152,7 @@ The function :py:func:`postprocess_fracture.get_fracture_variable` provides a li
 
 .. code-block:: python
 
-    from visualization import plot_fracture_list_slice
+    from pyfrac.utilities.visualization import plot_fracture_list_slice
     import numpy as np
 
     time_srs = np.geomspace(4e-3, 1, 5)
@@ -172,7 +172,7 @@ In the above code, we first load the state of the fracture at five equidistant t
 
 .. code-block:: python
 
-    from visualization import plot_analytical_solution_slice
+    from pyfrac.utilities.visualization import plot_analytical_solution_slice
 
     time_srs_loaded = get_fracture_variable(Fr_list, variable='time')
     Fig_WS = plot_analytical_solution_slice('M',
@@ -229,7 +229,7 @@ The following example is more advanced. By adding the argument 'export2Json=True
 .. code-block:: python
 
     from postprocess_fracture import append_to_json_file
-    from visualization import plot_fracture_list_slice
+    from pyfrac.utilities.visualization import plot_fracture_list_slice
     ########## TAKE A VERTICAL SECTION (along y axis) TO GET w AT THE MIDDLE ########
     ext_pnts = np.empty((2, 2), dtype=np.float64)
     print("\n 8) getting the slice along the y axis to get w(y)... ")
@@ -251,7 +251,7 @@ In the script above, "fracture_list_slice" contains a list of coordinates ad a s
 .. code-block:: python
 
     from postprocess_fracture import append_to_json_file
-    from visualization import plot_fracture_list_slice
+    from pyfrac.utilities.visualization import plot_fracture_list_slice
     ########## TAKE A VERTICAL SECTION (along y axis) TO GET w AT THE MIDDLE ########
     ext_pnts = np.empty((2, 2), dtype=np.float64)
     print("\n 8) getting the slice along the y axis to get w(y)... ")

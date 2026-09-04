@@ -5,7 +5,7 @@ PyFrac License
 Copyright © ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2022.
 All rights reserved.
 
-PyFrac is free software: you can redistribute it and/or modify it under the terms of 
+PyFrac is free software: you can redistribute it and/or modify it under the terms of
 the GNU General Public License as published by the Free Software Foundation,
  either version 3 of the License, or (at your option) any later version.
 
@@ -19,7 +19,7 @@ please contact EPFL-TTO (https://tto.epfl.ch/) for a full commercial license.
 Redistribution and use in source and binary forms, with or without modification, are permitted
 provided that the following conditions are met:
 
-• Redistributions of source code must retain the above copyright notice, this list of conditions 
+• Redistributions of source code must retain the above copyright notice, this list of conditions
   and the following disclaimer.
 • Redistributions in binary form must reproduce the above copyright notice, this list of conditions
   and the following disclaimer in the documentation and/or other materials provided with the distribution.

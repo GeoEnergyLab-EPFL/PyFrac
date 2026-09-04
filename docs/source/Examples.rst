@@ -24,7 +24,7 @@ Lets start the simulation at 0.5 seconds. At this time, the fracture has a radiu
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
+   from pyfrac.mesh import CartesianMesh
 
    # creating mesh
    Mesh = CartesianMesh(5, 5, 41, 41)
@@ -34,7 +34,7 @@ Next we setup the properties of the material by instantiating a :py:class:`prope
 .. code-block:: python
 
    import numpy as np
-   from properties import MaterialProperties
+   from pyfrac.properties import MaterialProperties
 
    # solid properties
    nu = 0.4                            # Poisson's ratio
@@ -53,7 +53,7 @@ After setting up the material properties, we next set up the properties of the f
 
 .. code-block:: python
 
-   from properties import InjectionProperties, FluidProperties, SimulationProperties
+   from pyfrac.properties import InjectionProperties, FluidProperties, SimulationProperties
 
    # injection parameters
    Q0 = 0.01  # injection rate
@@ -74,9 +74,9 @@ We will start our simulation at 0.5 seconds after the start of injection. At thi
 
 .. code-block:: python
 
-   from fracture_initialization import Geometry, InitializationParameters
-   from fracture import Fracture
-   from controller import Controller
+   from pyfrac.fracture_initialization import Geometry, InitializationParameters
+   from pyfrac.fracture import Fracture
+   from pyfrac.controller import Controller
 
    # initializing fracture
    Fr_geometry = Geometry(shape='radial')
@@ -104,7 +104,7 @@ Once the simulation is finished, or even when it is running, we can start visual
 
 .. code-block:: python
 
-   from visualization import *
+   from pyfrac.utilities.visualization import *
 
    Fr_list, properties = load_fractures("./Data/MtoK_leakoff")
 
@@ -169,7 +169,7 @@ Let us start by defining mesh. We are given the height of the middle layer to be
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
+   from pyfrac.mesh import CartesianMesh
 
    # creating mesh
    Mesh = CartesianMesh(20, 2.3, 71, 15)
@@ -178,7 +178,7 @@ Next we setup the properties of the material by instantiating a :py:class:`prope
 
 .. code-block:: python
 
-   from properties import MaterialProperties
+   from pyfrac.properties import MaterialProperties
 
    # solid properties
    nu = 0.4                            # Poisson's ratio
@@ -202,7 +202,7 @@ After setting up the material properties, we next set up the properties of the f
 
 .. code-block:: python
 
-   from properties import InjectionProperties, FluidProperties, SimulationProperties
+   from pyfrac.properties import InjectionProperties, FluidProperties, SimulationProperties
 
    # fluid properties
    Fluid = FluidProperties(viscosity=1.1e-3)
@@ -222,9 +222,9 @@ We will start our simulation with a fracture of 1.3 meters radius. Since we have
 
 .. code-block:: python
 
-   from fracture_initialization import Geometry, InitializationParameters
-   from fracture import Fracture
-   from controller import Controller
+   from pyfrac.fracture_initialization import Geometry, InitializationParameters
+   from pyfrac.fracture import Fracture
+   from pyfrac.controller import Controller
 
    # initializing fracture
    Fr_geometry = Geometry(shape='radial', radius=1.3)
@@ -252,7 +252,7 @@ Once the simulation is finished, or even when it is running, we can start visual
 
 .. code-block:: python
 
-   from visualization import *
+   from pyfrac.utilities.visualization import *
 
    Fr_list, properties = load_fractures(address="./Data/height_contained")
    time_srs = get_fracture_variable(Fr_list, variable='time')
@@ -389,8 +389,8 @@ We can proceed in the same manner as the previous examples. Lets make a mesh and
    import numpy as np
 
    # local imports
-   from mesh import CartesianMesh
-   from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+   from pyfrac.mesh import CartesianMesh
+   from pyfrac.properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 
    # creating mesh
    Mesh = CartesianMesh(90, 66, 41, 27)
@@ -430,9 +430,9 @@ Note that we have provided coordinates of the injection point, which if not prov
 
 .. code-block:: python
 
-   from fracture import Fracture
-   from controller import Controller
-   from fracture_initialization import Geometry, InitializationParameters
+   from pyfrac.fracture import Fracture
+   from pyfrac.controller import Controller
+   from pyfrac.fracture_initialization import Geometry, InitializationParameters
 
    # simulation properties
    simulProp = SimulationProperties()
@@ -470,7 +470,7 @@ To visualize the results, lets first plot the fracture footprint at :math:`t=[24
 
 .. code-block:: python
 
-   from visualization import *
+   from pyfrac.utilities.visualization import *
 
    # loading simulation results
    time_srs = [230, 1000, 2200, 3200, 4500, 6000, 10388]
@@ -534,8 +534,8 @@ We will set up the mesh and the material, fluid and injection properties in the 
    import numpy as np
 
    # local imports
-   from mesh import CartesianMesh
-   from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
+   from pyfrac.mesh import CartesianMesh
+   from pyfrac.properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
 
    # creating mesh
    Mesh = CartesianMesh(3200, 2800, 83, 83)
@@ -592,9 +592,9 @@ Note that we have set the gravity flag to accommodate the effect of gravity. In 
 
 .. code-block:: python
 
-   from fracture import Fracture
-   from controller import Controller
-   from fracture_initialization import Geometry, InitializationParameters
+   from pyfrac.fracture import Fracture
+   from pyfrac.controller import Controller
+   from pyfrac.fracture_initialization import Geometry, InitializationParameters
    from elasticity import load_isotropic_elasticity_matrix
 
    C = load_isotropic_elasticity_matrix(Mesh, Solid.Eprime)
@@ -625,7 +625,7 @@ After the simulation is finished, we can plot the footprint and width of the fra
 
 .. code-block:: python
 
-   from visualization import *
+   from pyfrac.utilities.visualization import *
 
    # loading simulation results
    time_srs = np.asarray([50, 350, 700, 1100, 2500, 12000, 50000, 560000])

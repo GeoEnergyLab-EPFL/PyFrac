@@ -1,1 +1,8 @@
 # Created by .ignore support plugin (hsz.mobi)
+pyfrac.egg-info
+build
+__pycache__
+Data*
+*.pkl
+*.npy
+*.ipynb

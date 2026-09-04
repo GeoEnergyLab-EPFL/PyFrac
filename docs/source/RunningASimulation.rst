@@ -7,7 +7,7 @@ Lets run a simple simulation of a radial fracture propagation. The first step to
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
+   from pyfrac.mesh import CartesianMesh
 
    Mesh = CartesianMesh(0.3, 0.3, 41, 41)
 
@@ -15,7 +15,7 @@ The above code will generate a rectangular mesh with 41 cells along both the x a
 
 .. code-block:: python
 
-   from properties import MaterialProperties
+   from pyfrac.properties import MaterialProperties
 
    # solid properties
    nu = 0.4                            # Poisson's ratio
@@ -29,7 +29,7 @@ The fluid properties are to be set up with a :py:class:`properties.FluidProperti
 
 .. code-block:: python
 
-   from properties import FluidProperties
+   from pyfrac.properties import FluidProperties
 
    # fluid properties
    Fluid = FluidProperties(viscosity=1.1e-3)
@@ -38,7 +38,7 @@ Next, we will set up injection parameters with the :py:class:`properties.Injecti
 
 .. code-block:: python
 
-   from properties import  InjectionProperties
+   from pyfrac.properties import  InjectionProperties
 
    # injection parameters
    Q0 = 0.001  # injection rate
@@ -48,7 +48,7 @@ Simulation parameters such as the end time, the times at which the solution is r
 
 .. code-block:: python
 
-   from properties import SimulationProperties
+   from pyfrac.properties import SimulationProperties
 
    # simulation properties
    simulProp = SimulationProperties()
@@ -59,8 +59,8 @@ After setting up of the properties, let us set up the initial state of the fract
 
 .. code-block:: python
 
-   from fracture import Fracture
-   from fracture_initialization import Geometry, InitializationParameters
+   from pyfrac.fracture import Fracture
+   from pyfrac.fracture_initialization import Geometry, InitializationParameters
 
    # initialization parameters
    Fr_geometry = Geometry('radial', radius=0.15)
@@ -78,7 +78,7 @@ After specifying all the properties and initializing the fracture, we will set u
 
 .. code-block:: python
 
-   from controller import Controller
+   from pyfrac.controller import Controller
 
    # create a Controller
    controller = Controller(Fr,
@@ -101,7 +101,7 @@ around any point you wish by executing the following:
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
+   from pyfrac.mesh import CartesianMesh
 
    Mesh = CartesianMesh(0.15, [-0.175, 0.05], 47, 71)
 
@@ -118,7 +118,7 @@ re-meshing factor can be adapted with:
 
 .. code-block:: python
 
-   from properties import SimulationProperties
+   from pyfrac.properties import SimulationProperties
 
    simulProp = SimulationProperties()
    simulProp.remeshFactor = 1.5
@@ -208,8 +208,8 @@ are specified:
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
-   from properties import SimulationProperties
+   from pyfrac.mesh import CartesianMesh
+   from pyfrac.properties import SimulationProperties
 
    # creating mesh
    Mesh = CartesianMesh(0.01, 0.01, 31, 31)
@@ -271,8 +271,8 @@ initiate the problem with the following re-meshing properties:
 
 .. code-block:: python
 
-   from mesh import CartesianMesh
-   from properties import SimulationProperties
+   from pyfrac.mesh import CartesianMesh
+   from pyfrac.properties import SimulationProperties
 
    # creating mesh
    Mesh = CartesianMesh(0.3, 0.3, 21, 21)

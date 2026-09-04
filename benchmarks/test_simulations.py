@@ -7,16 +7,20 @@ Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy 
 All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-import shutil
+# External imports
 import os
+import shutil
+
+# Internal imports
 from benchmarks.simulparam_and_tolerances import *
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-import numpy as np
-from visualization import *
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.utilities.visualization import *
 
 def pytest_generate_tests(metafunc):
     # called once per each test function
@@ -154,13 +158,13 @@ class TestClass:
         # checking the results #
         ########################
 
-        from postprocess_fracture import get_fracture_dimensions_analytical_with_properties
-        from postprocess_fracture import get_HF_analytical_solution_at_point
-        from postprocess_fracture import get_fracture_variable_at_point
-        from visualization import load_fractures
-        from visualization import get_fracture_variable
-        from visualization import plot_fracture_list_slice
-        from properties import LabelProperties
+        from pyfrac.utilities.postprocess_fracture import get_fracture_dimensions_analytical_with_properties
+        from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution_at_point
+        from pyfrac.utilities.postprocess_fracture import get_fracture_variable_at_point
+        from pyfrac.utilities.postprocess_fracture import load_fractures
+        from pyfrac.utilities.visualization import get_fracture_variable
+        from pyfrac.utilities.visualization import plot_fracture_list_slice
+        from pyfrac.properties import LabelProperties
 
         # loading simulation results
         Fr_list, properties = load_fractures(address=outputfolder)  # load all fractures
@@ -226,7 +230,7 @@ class TestClass:
                 i) + " the solution for the Fracture opening is too far from the analytical"
 
         ####### useful for debugging ###
-        # from visualization import *
+        # from pyfrac.utilities.visualization import *
         # plot_prop = PlotProperties()
         # plot_prop.lineStyle = '.'  # setting the line style to point
         # plot_prop.graphScaling = 'loglog'  # setting to log log plot
@@ -263,7 +267,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from postprocess_fracture import get_HF_analytical_solution
+            from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('w', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'w',
@@ -296,7 +300,7 @@ class TestClass:
             assert diff_total_vs_time[i] < toll['w_section_toll_cumulative_value'][i]
 
         ####### useful for debugging ###
-        # from visualization import *
+        # from pyfrac.utilities.visualization import *
         # # plot slice
         # ext_pnts = np.empty((2, 2), dtype=np.float64)
         # Fig_WS = plot_fracture_list_slice(Fr_list,
@@ -330,7 +334,7 @@ class TestClass:
                                                               export2Json=True,
                                                               export2Json_assuming_no_remeshing=False)
 
-            from postprocess_fracture import get_HF_analytical_solution
+            from pyfrac.utilities.postprocess_fracture import get_HF_analytical_solution
             labels = LabelProperties('pn', 'slice', '2D')
             analytical_list, mesh_list = get_HF_analytical_solution(my_vertex,
                                                                     'pn',
@@ -357,6 +361,8 @@ class TestClass:
             diff_max_vs_time.append(diff_i.max())
             diff_total_vs_time.append(diff)
         #print('here')
+        # The pressure here is everywhere the analytical one even in the cells that are outside the fracture. This is
+        # true for the toughness regime. To be changed in the evaluation.
         for i in range(len(Fr_list)):
             assert diff_max_vs_time[i] < toll['p_section_toll_max_value'][i]
             assert diff_total_vs_time[i] < toll['p_section_toll_cumulative_value'][i]

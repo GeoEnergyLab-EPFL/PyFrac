@@ -1,6 +1,6 @@
 //
 // Copyright (c) ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland,
-// Geo-Energy Laboratory, 2016-2019.  All rights reserved.
+// Geo-Energy Laboratory, 2016-2022.  All rights reserved.
 // See the LICENSE.TXT file for more details.
 //
 // Contributors:
@@ -17,7 +17,6 @@ namespace hfp3d {
         i >> j;
 
         //create the stiffness matrix
-
         il::Array<double> Ce{5};
         int ii=0;
         for (json::iterator it = j["Solid parameters"].begin(); it != j["Solid parameters"].end(); ++it) {

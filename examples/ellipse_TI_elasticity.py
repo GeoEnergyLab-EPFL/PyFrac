@@ -7,18 +7,21 @@ Copyright (c) "ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy
 2016-2019. All rights reserved. See the LICENSE.TXT file for more details.
 """
 
-# imports
+# External imports
 import numpy as np
 import os
 
 # local imports
-from mesh import CartesianMesh
-from properties import MaterialProperties, FluidProperties, InjectionProperties, SimulationProperties
-from fracture import Fracture
-from controller import Controller
-from fracture_initialization import Geometry, InitializationParameters
-from anisotropy import TI_plain_strain_modulus
-from utility import setup_logging_to_console
+from pyfrac.mesh_obj.mesh import CartesianMesh
+from pyfrac.solid.solid_prop import MaterialProperties
+from pyfrac.fluid.fluid_prop import FluidProperties
+from pyfrac.properties import InjectionProperties, SimulationProperties
+from pyfrac.fracture_obj.fracture import Fracture
+from pyfrac.controller import Controller
+from pyfrac.fracture_obj.fracture_initialization import Geometry, InitializationParameters
+from pyfrac.solid.elasticity_Transv_Isotropic import TI_plain_strain_modulus
+from pyfrac.utilities.utility import setup_logging_to_console
+from pyfrac.utilities.postprocess_fracture import load_fractures
 
 # setting up the verbosity level of the log at console
 setup_logging_to_console(verbosity_level='info')
@@ -45,8 +48,15 @@ Cij = Cij * 1e9
 Eprime = TI_plain_strain_modulus(np.pi/2, Cij) # plain strain modulus
 
 # the function below will make the fracture propagate in the form of an ellipse (see Zia and Lecampion, 2018)
-def K1c_func(alpha):
+def K1c_func(x,y,alpha):
     """ function giving the dependence of fracture toughness on propagation direction alpha"""
+
+    if alpha > np.pi/2. and alpha <= np.pi:
+        alpha = np.pi-alpha
+    elif alpha > np.pi and alpha <= 3*np.pi/2:
+        alpha = alpha - np.pi
+    elif alpha > 3*np.pi/2 and alpha <= 2*np.pi:
+        alpha = 2*np.pi - alpha
 
     K1c_3 = 2e6 *1.2                # fracture toughness along y-axis
     K1c_1 = 2e6                     # fracture toughness along x-axis
@@ -62,7 +72,7 @@ def K1c_func(alpha):
 Solid = MaterialProperties(Mesh,
                            Eprime,
                            anisotropic_K1c=True,
-                           toughness=K1c_func(np.pi/2),
+                           toughness=K1c_func(0.,0.,np.pi/2),
                            K1c_func=K1c_func,
                            TI_elasticity=True,
                            Cij=Cij)
@@ -75,7 +85,7 @@ Injection = InjectionProperties(Q0, Mesh)
 Fluid = FluidProperties(viscosity=1.1e-4)
 
 # aspect ratio of the elliptical fracture
-gamma  = (K1c_func(np.pi/2) / K1c_func(0) * TI_plain_strain_modulus(    # gamma = (Kc3/Kc1*E1/E3)**2
+gamma  = (K1c_func(0.,0.,np.pi/2) / K1c_func(0.,0.,0.) * TI_plain_strain_modulus(    # gamma = (Kc3/Kc1*E1/E3)**2
             0, Cij)/TI_plain_strain_modulus(np.pi/2, Cij))**2
 
 # simulation properties
@@ -91,7 +101,7 @@ simulProp.TI_KernelExecPath = '../TI_Kernel/build/'         # path to the execut
 simulProp.symmetric = True              # solving with faster solver that assumes fracture is symmetric
 simulProp.remeshFactor = 1.5            # the factor by which the domain is expanded
 simulProp.projMethod = 'ILSA_orig'
-simulProp.set_tipAsymptote('U')
+simulProp.set_tipAsymptote('U1')
 
 # initialization parameters
 Fr_geometry = Geometry('elliptical',
@@ -123,7 +133,7 @@ controller.run()
 
 if not os.path.isfile('./batch_run.txt'): # We only visualize for runs of specific examples
 
-    from visualization import *
+    from pyfrac.utilities.visualization import *
 
     # loading simulation results
     time_srs = np.geomspace(0.7, 1000, 8)
