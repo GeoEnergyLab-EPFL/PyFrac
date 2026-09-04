@@ -1,7 +1,7 @@
 default\_parameters module
 ==========================
 
-.. automodule:: default_parameters
+.. automodule:: pyfrac.default_parameters
    :members:
    :undoc-members:
    :show-inheritance:

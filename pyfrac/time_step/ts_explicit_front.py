@@ -701,8 +701,9 @@ def time_step_explicit_front(
             "number_of_fronts": fronts_dictionary["number_of_fronts"]
         }
 
-    C._set_tipcorr(FillFrac_k, EltsTipNew)
-    C._set_kerneltype_as_R0()
+    if hasattr(C, "_set_tipcorr"):
+        C._set_tipcorr(FillFrac_k, EltsTipNew)
+        C._set_kerneltype_as_R0()
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(
         Fr_lstTmStp,
         sim_properties,
@@ -727,8 +728,9 @@ def time_step_explicit_front(
         doublefracturedictionary=doublefracturedictionary,
     )
 
-    C.enable_tip_corr = False
-    C._set_kerneltype_as_it_used_to_be()
+    if hasattr(C, "_set_kerneltype_as_it_used_to_be"):
+        C.enable_tip_corr = False
+        C._set_kerneltype_as_it_used_to_be()
 
     # check if the new width is valid
     if np.isnan(w_n_plus1).any():

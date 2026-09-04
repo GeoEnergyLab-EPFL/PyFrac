@@ -1,7 +1,7 @@
 properties module
 =================
 
-.. automodule:: properties
+.. automodule:: pyfrac.properties
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
 anisotropy module
 =================
 
-.. automodule:: anisotropy
+.. automodule:: pyfrac.level_set.anisotropy
    :members:
    :undoc-members:
    :show-inheritance:

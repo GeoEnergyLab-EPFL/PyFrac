@@ -218,10 +218,10 @@ def sol_sys_volume_and_load_control(
                     for j in range(4):
                         in_tip = np.where(EltTip == other_corr[0][j])[0]
                         if len(in_tip) > 0:
-                            wTip_sym[i] = wTip[in_tip]
+                            wTip_sym[i] = wTip[in_tip[0]]
                             break
                 else:
-                    wTip_sym[i] = wTip[np.where(EltTip == wTip_sym_elts[i])[0]]
+                    wTip_sym[i] = wTip[np.where(EltTip == wTip_sym_elts[i])[0][0]]
 
             dwTip = wTip - Fr_lstTmStp.w[EltTip]
             A, b = MakeEquationSystem_volumeControl_symmetric(

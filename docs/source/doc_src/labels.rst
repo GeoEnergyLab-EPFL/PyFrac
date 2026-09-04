@@ -1,7 +1,7 @@
 labels module
 =============
 
-.. automodule:: labels
+.. automodule:: pyfrac.utilities.labels
    :members:
    :undoc-members:
    :show-inheritance:

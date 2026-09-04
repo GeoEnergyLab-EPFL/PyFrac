@@ -1,7 +1,7 @@
 visualization module
 ====================
 
-.. automodule:: visualization
+.. automodule:: pyfrac.utilities.visualization
    :members:
    :undoc-members:
    :show-inheritance:

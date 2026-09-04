@@ -1,7 +1,7 @@
 postprocess\_fracture module
 ============================
 
-.. automodule:: postprocess_fracture
+.. automodule:: pyfrac.utilities.postprocess_fracture
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,7 +1,7 @@
-HF\_analytical module
-=====================
+HF\_reference\_solutions module
+=================================
 
-.. automodule:: HF_analytical
+.. automodule:: pyfrac.HF_reference_solutions
    :members:
    :undoc-members:
    :show-inheritance:

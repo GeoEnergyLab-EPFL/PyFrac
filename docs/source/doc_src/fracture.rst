@@ -1,7 +1,7 @@
 fracture module
 ===============
 
-.. automodule:: fracture
+.. automodule:: pyfrac.fracture_obj.fracture
    :members:
    :undoc-members:
    :show-inheritance:

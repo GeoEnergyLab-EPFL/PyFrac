@@ -365,7 +365,7 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
         i += 1
 
     # remove redundant points
-    polygon = np.vstack({tuple(row) for row in polygon})
+    polygon = np.vstack(list({tuple(row) for row in polygon}))
 
 
     tip_smoothed = np.array([], dtype=int) # the cells containing the edges of polygon (giving the smoothed front)
@@ -436,12 +436,12 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
             equal = smthed_tip_points_left == smthed_tip_points_left[i]
             left_nei = np.where(np.logical_and(equal[:, 0], equal[:, 1]))[0]
             if left_nei.size == 2:
-                tip_lft_neghb[i] = left_nei[np.where(left_nei != i)[0]]
+                tip_lft_neghb[i] = left_nei[np.where(left_nei != i)[0][0]]
             else:
                 return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
                 # tip_lft_neghb[i] = i
         else:
-            tip_lft_neghb[i] = left_nei
+            tip_lft_neghb[i] = left_nei[0]
 
         # find the eight neighbor of the tip cells in the tip
         equal = smthed_tip_points_left == smthed_tip_points_rgt[i]
@@ -450,12 +450,12 @@ def construct_polygon(elt_tip, l_tip, alpha_tip, mesh, zero_vertex_tip):
             equal = smthed_tip_points_rgt == smthed_tip_points_rgt[i]
             rgt_nei = np.where(np.logical_and(equal[:, 0], equal[:, 1]))[0]
             if rgt_nei.size == 2:
-                tip_rgt_neghb[i] = rgt_nei[np.where(rgt_nei != i)[0]]
+                tip_rgt_neghb[i] = rgt_nei[np.where(rgt_nei != i)[0][0]]
             else:
                 return np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan
                 # tip_rgt_neghb[i] = i
         else:
-            tip_rgt_neghb[i] = rgt_nei
+            tip_rgt_neghb[i] = rgt_nei[0]
 
 
     return tip_smoothed, smthed_tip_lines_a, smthed_tip_lines_b, smthed_tip_lines_c, smthed_tip_points_left, \
@@ -934,7 +934,7 @@ class get_toughness_from_cellCenter_iter():
             Kprime = np.zeros(x.size)
             if isinstance(alpha_loc, np.ndarray):
                 for i in range(x.size):
-                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i], alpha_loc[[i]])
+                    Kprime[i] = self.matProp.Kprime_func(x[i], y[i], alpha_loc[i])
             else:
                 for i in range(x.size):
                     Kprime[i] = self.matProp.Kprime_func(x[i], y[i], alpha_loc)

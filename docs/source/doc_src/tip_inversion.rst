@@ -1,7 +1,7 @@
 tip\_inversion module
 =====================
 
-.. automodule:: tip_inversion
+.. automodule:: pyfrac.tip.tip_inversion
    :members:
    :undoc-members:
    :show-inheritance:

@@ -609,8 +609,8 @@ def injection_extended_footprint(
         doublefracturedictionary = {
             "number_of_fronts": fronts_dictionary["number_of_fronts"]
         }
-    # if hasattr(C, "_set_tipcorr"):
-    C._set_tipcorr(FillFrac_k, EltsTipNew)
+    if hasattr(C, "_set_tipcorr"):
+        C._set_tipcorr(FillFrac_k, EltsTipNew)
     w_n_plus1, pf_n_plus1, data = solve_width_pressure(
         Fr_lstTmStp,
         sim_properties,
@@ -634,8 +634,8 @@ def injection_extended_footprint(
         stagnant,
         doublefracturedictionary=doublefracturedictionary,
     )
-    # if hasattr(C, "enable_tip_corr"):
-    C.enable_tip_corr = False
+    if hasattr(C, "enable_tip_corr"):
+        C.enable_tip_corr = False
 
     # from utility import plot_as_matrix
     # K = pf_n_plus1

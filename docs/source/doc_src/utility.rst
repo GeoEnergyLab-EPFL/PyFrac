@@ -1,7 +1,7 @@
 utility module
 ==============
 
-.. automodule:: utility
+.. automodule:: pyfrac.utilities.utility
    :members:
    :undoc-members:
    :show-inheritance:

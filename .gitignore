@@ -6,3 +6,4 @@ Data*
 *.pkl
 *.npy
 *.ipynb
+.venv

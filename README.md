@@ -42,23 +42,41 @@ Bugs should be reported as issues via GitHub.
 
 ## Getting started
 
-Running PyFrac will require a functioning installation of Python 3, numpy, SciPy and matplotlib. You can download ANACONDA distribution with all these packages from <https://www.anaconda.com/distribution/>. To run PyFrac using Unix shell or windows command prompt, the directory containing the PyFrac source code is required to be added to the ``PYTHONPATH`` environment variable. It can be added with the following command on windows (give the local path of the ``src`` folder in place of path_of_PyFrac_src):
+You will need an environment with a recent version of Python installed. Install PyFrac along with its dependencies with:
+```bash
+pip install .
+```
 
-    set PYTHONPATH=%PYTHONPATH%;path_of_PyFrac_src
+### Running example
 
-and with the following for linux or mac:
+After having installed PyFrac the examples can simply be run with:
+```bash
+cd examples
+python radial_MtoK.py
+```
 
-    export PYTHONPATH=${PYTHONPATH}:path_of_PyFrac_src
+There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (https://doi.org/10.1016/j.cpc.2020.107368). The corresponding example number from the paper is mentioned in the name of these scripts.
 
-PyFrac uses dill package for saving files on hard disk. You can use pip to install the latest distribution of the package with the following command:
+**Note:**   Some of the examples may take upto 2 hours to run.
 
-    pip install dill
+## Documentation
 
-If you already have python 3 installed through anaconda, update installed packages to the latest version. You can use the following to update all installed packages:
+You can generate documentation locally using sphinx. First install shpinx using pip:
 
-   conda update --all
+    pip install sphinx
 
-### Transverse Isotropic Kernel
+Then change directory to the Doc folder present in the PyFrac code. Run the make command to build the documentation in html:
+
+    make html
+
+or in pdf as:
+
+    make latexpdf
+
+After the build is complete, you can access the documentation in the build folder. For html, start with the file named index. The pdf file is located in the subflolder latex.
+
+
+## Transverse Isotropic Kernel (optionnal)
 
 PyFrac uses a routine written in C++ to evaluate elasticity kernel for the transversely isotropic materials. This C++ code has to be compiled before the fracture simulation can be done for transverse isotropic materials. Use the following steps to generate the executable:
 
@@ -111,30 +129,3 @@ The code uses the Inside Loop (il) library which requires installation of OpenBL
 
     cmake ..  
     make
-
-## Documentation
-
-You can generate documentation locally using sphinx. First install shpinx using pip:
-
-    pip install sphinx
-
-Then change directory to the Doc folder present in the PyFrac code. Run the make command to build the documentation in html:
-
-    make html
-
-or in pdf as:
-
-    make latexpdf
-
-After the build is complete, you can access the documentation in the build folder. For html, start with the file named index. The pdf file is located in the subflolder latex.
-
-## Running an example
-
-
-Change directory to the folder containing the PyFrac code. An example can be run from the windows command prompt or linux shell by executing the example script e.g.:
-
-    python ./examples/radial_viscosity_explicit.py
-
-There are scripts available for a set of examples in the examples folders provided with the code, including the scripts to reproduce the results presented in the paper published in Computer Physics Communications (https://doi.org/10.1016/j.cpc.2020.107368). The corresponding example number from the paper is mentioned in the name of these scripts.
-
-**Note:**   Some of the examples may take upto 2 hours to run.

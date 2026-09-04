@@ -263,15 +263,15 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             time_srs[i] = fracture_list[i].time
 
     elif variable == 'front velocity' or variable == 'v':
-        for i in fracture_list:
+        for idx, i in enumerate(fracture_list):
             if isinstance(i.mesh, int):
                 fr_mesh = fracture_list[i.mesh].mesh
             else:
                 fr_mesh = i.mesh
             vel = np.full((fr_mesh.NumberOfElts, ), np.nan)
             vel[i.EltTip] = i.v
-            variable_list.append(vel)
-            time_srs.append(i.time)
+            variable_list[idx] = vel
+            time_srs[idx] = i.time
 
     elif variable == 'Reynolds number' or variable == 'Re':
         if fracture_list[-1].ReynoldsNumber is None:

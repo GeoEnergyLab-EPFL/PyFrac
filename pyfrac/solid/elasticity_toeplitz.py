@@ -463,6 +463,23 @@ class elasticity_matrix_toepliz(LinearOperator):
         #                 + str(Mesh.NumberOfElts))
         self.reload_dot(Mesh)
 
+    def __getstate__(self):
+        # numba.typed.List objects hold a _nrt_python._MemInfo that cannot be
+        # pickled. C_toeplitz_coe_decay is derived data (a preconditioner decay
+        # profile rebuilt from C_toeplitz_coe), so we serialize it as a plain
+        # Python list and rebuild the numba List on unpickling.
+        state = self.__dict__.copy()
+        decay = state.get("C_toeplitz_coe_decay", None)
+        if decay is not None:
+            state["C_toeplitz_coe_decay"] = list(decay)
+        return state
+
+    def __setstate__(self, state):
+        decay = state.get("C_toeplitz_coe_decay", None)
+        if decay is not None:
+            state["C_toeplitz_coe_decay"] = List(decay)
+        self.__dict__.update(state)
+
     def reload_HMAT_Coe(self, Mesh, self_eff=None):
         #################### HMAT dot SECTION ###################
         if self.updateHMATuponRemeshing:
