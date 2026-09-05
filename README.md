@@ -2,7 +2,7 @@
 
 PyFrac is a simulator for the propagation of planar 3D fluid driven fractures written in Python. It is based on an implicit level set description of the fracture.
 
-Copyright © ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2023.
+Copyright © ECOLE POLYTECHNIQUE FEDERALE DE LAUSANNE, Switzerland, Geo-Energy Laboratory, 2016-2026.
 All rights reserved.
 
 PyFrac is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -14,12 +14,13 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ## Contributors
 
-- Haseeb Zia (2016-)
-- Carlo Peruzzo (2019-)
-- Andreas Mori (2019-)
+- Haseeb Zia (2016-2021)
+- Carlo Peruzzo (2019-2023)
+- Andreas Mori (2019-2023)
 - Brice Lecampion (2016-)
 - Fatima-Ezzahra Moukhtari (2017-2019)
 - Weihan Zhang (2017)
+- Sylvain Brisson (2025-)
  
 ## How to cite
 
@@ -34,9 +35,6 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 ## Support
 
 We do not have the capacities to provide support, but will do our best to address users questions. 
-To do so, we have created a Slack channel for PyFrac where you can post questions. 
-You can join the channel via the following link:
-https://join.slack.com/t/pyfrac/shared_invite/zt-hqt8wg1w-_7YC4PBNitp7C~a_0ygm~A
 
 Bugs should be reported as issues via GitHub.
 
@@ -84,21 +82,6 @@ PyFrac uses a routine written in C++ to evaluate elasticity kernel for the trans
 
 The code uses the Inside Loop (il) library which requires installation of OpenBLAS. See https://github.com/InsideLoop/InsideLoop. We ship the il source codes with this release for simplicity.  Follow the instruction below for your operating system in order to compile the elastic TI code for planar fracture and rectangular mesh.
 
-#### windows
-
-   1. Download and install OpenBLAS. You can also download binary packages available for windows (preferred).
-   2. Download and install MSYS2.
-   3. Install gcc and cmake for MSYS2 using the following:
-
-    pacman -S base-devel gcc vim cmake
-   4. In case you have downloaded the binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
-   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
-
-    cmake ..  
-    make
-
-   6. Add MSYS2 libraries path (typically C:\\msys64\\usr\\bin) to the windows `PATH` environment variable.
-
 #### Linux
 
    1. Install OpenBlas and LAPACK with the following commands:
@@ -129,3 +112,18 @@ The code uses the Inside Loop (il) library which requires installation of OpenBL
 
     cmake ..  
     make
+
+#### windows (currently not re-tested)
+
+   1. Download and install OpenBLAS. You can also download binary packages available for windows (preferred).
+   2. Download and install MSYS2.
+   3. Install gcc and cmake for MSYS2 using the following:
+
+    pacman -S base-devel gcc vim cmake
+   4. In case you have downloaded the binary packages for OpenBLAS, you would have to provide the location of the OpenBLAS libraries. You can do that by providing the location in the CmakeLists file.
+   5. Change directory to the TI_Kernel\\build folder in PyFrac. Create the executable using cmake by running the following commands one by one:
+
+    cmake ..  
+    make
+
+   6. Add MSYS2 libraries path (typically C:\\msys64\\usr\\bin) to the windows `PATH` environment variable.

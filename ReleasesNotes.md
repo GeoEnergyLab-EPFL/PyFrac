@@ -1,5 +1,11 @@
 # PyFrac Releases Notes
 
+Version 1.2.1 (August 2026)
+-----
+- update to new version of scipy
+- pip install enabled
+
+
 Version 1.1.1 (November 2020)
 -----
 
