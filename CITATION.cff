@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Zia
+    given-names: Haseeb
+  - family-names: Peruzzo
+    given-names: Carlo
+  - family-names: Mori
+    given-names: Andreas
+  - family-names: Lecampion
+    given-names: Brice
+    orcid: https://orcid.org/0000-0001-9201-6592
+  - family-names: Moukhtari
+    given-names: Fatima-Ezzahra
+  - family-names: Brisson
+    given-names: Sylvain  
+title: "PyFracture: a simulator for the propagation of planar 3D fluid driven fractures written in Python. It is based on an implicit level set description of the fracture."
+version: 1.2.1
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.10794248 
+date-released: 2026-09-06
