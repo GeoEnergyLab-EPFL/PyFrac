@@ -301,7 +301,9 @@ def plot_fracture_list(fracture_list, variable='footprint', projection=None, ele
                                    norm=plt.Normalize(vmin=vmin,
                                                       vmax=vmax))
         sm._A = []
-        cb = plt.colorbar(sm, alpha=plot_prop.alpha)
+        # recent matplotlib can no longer infer the Axes for a bare ScalarMappable;
+        # pass ax explicitly so it knows where to steal space for the colorbar.
+        cb = plt.colorbar(sm, ax=ax, alpha=plot_prop.alpha)
         cb.set_label(labels.colorbarLabel)
 
     elif projection in ('2D_clrmap', '2D_contours') and variable != 'regime':
@@ -810,7 +812,7 @@ def plot_fracture_variable_as_surface(var_value, mesh, fig=None, plot_prop=None,
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                    norm=plt.Normalize(vmin=vmin, vmax=vmax))
         sm._A = []
-        plt.colorbar(sm, alpha=plot_prop.alpha)
+        plt.colorbar(sm, ax=ax, alpha=plot_prop.alpha)
 
     ax.set_zlim(vmin, vmax)
 
@@ -878,7 +880,7 @@ def plot_fracture_surface(width, mesh, fig=None, plot_prop=None, plot_colorbar=T
         sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                    norm=plt.Normalize(vmin=vmin, vmax=vmax))
         sm._A = []
-        plt.colorbar(sm, alpha=plot_prop.alpha)
+        plt.colorbar(sm, ax=ax, alpha=plot_prop.alpha)
 
     ax.set_zlim(vmin, vmax)
 
@@ -1649,7 +1651,10 @@ def plot_scale_3D(fracture, fig=None, plot_prop=None):
            fc="k")
 
     ax.grid(False)
-    ax.set_frame_on(False)
+    # Axes3D.set_frame_on is None in recent matplotlib (>=3.x); set_axis_off()
+    # below already removes the frame, so only call it when it is available.
+    if callable(getattr(ax, "set_frame_on", None)):
+        ax.set_frame_on(False)
     ax.set_axis_off()
 
     return fig
@@ -1951,7 +1956,7 @@ def plot_analytical_solution(regime, variable, mat_prop, inj_prop, mesh=None, fl
                                        norm=plt.Normalize(vmin=vmin,
                                                           vmax=vmax))
             sm._A = []
-            cb = plt.colorbar(sm, alpha=plot_prop_cp.alpha)
+            cb = plt.colorbar(sm, ax=ax, alpha=plot_prop_cp.alpha)
             cb.set_label(labels.colorbarLabel + ' analytical')
         elif projection in ('2D_clrmap', '2D_contours'):
             im = ax.images

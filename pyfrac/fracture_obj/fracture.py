@@ -611,9 +611,11 @@ class Fracture:
         else:
             ax = fig.get_axes()[0]
 
-        ax.set_frame_on(False)
+        # Axes3D.set_frame_on is None in recent matplotlib (>=3.x); set_axis_off()
+        # below already removes the frame, so only call it when it is available.
+        if callable(getattr(ax, "set_frame_on", None)):
+            ax.set_frame_on(False)
         ax.grid(False)
-        ax.set_frame_on(False)
         ax.set_axis_off()
 
         if plot_prop is None:

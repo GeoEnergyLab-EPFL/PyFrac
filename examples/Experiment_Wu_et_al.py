@@ -60,7 +60,11 @@ simulProp.bckColor = 'confining stress'           # the parameter according to w
 simulProp.frontAdvancing = 'explicit'
 simulProp.set_outputFolder('./Data/Wu_et_al')
 simulProp.set_solTimeSeries(np.asarray([22., 60., 144., 376., 665.]))
-simulProp.plotVar = ['footprint']
+simulProp.saveTSJump, simulProp.plotTSJump = (
+    5,
+    1,
+)  # save and plot after every 5 time steps
+simulProp.plotVar = ['regime', 'w']
 
 # initializing fracture
 Fr_geometry = Geometry('radial', radius=0.019)

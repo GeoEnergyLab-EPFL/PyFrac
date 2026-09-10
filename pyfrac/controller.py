@@ -2138,26 +2138,34 @@ class Controller:
         self.injection_prop.remesh(coarse_mesh, self.fracture.mesh)
 
         log.info("Recalculting the elasticity matrix")
-        updateHMATuponRemeshing = copy.deepcopy(self.C.updateHMATuponRemeshing)
-        nu = copy.deepcopy(self.C.nu)
-        Kernel = copy.deepcopy(self.C.Kernel)
-        HMATparam = copy.deepcopy(self.C.HMATparam)
-        if updateHMATuponRemeshing:
-            self.C.HMAT._unset()
-            log.info("   --> memory of the old elasticity matrix is now free")
+        if self.sim_prop.symmetric:
+            # symmetric fractures use a plain ndarray elasticity matrix (no HMAT/Toeplitz)
+            self.C = load_isotropic_elasticity_matrix_symmetric(
+                coarse_mesh, self.solid_prop.Eprime
+            )
+        else:
+            updateHMATuponRemeshing = copy.deepcopy(self.C.updateHMATuponRemeshing)
+            nu = copy.deepcopy(self.C.nu)
+            Kernel = copy.deepcopy(self.C.Kernel)
+            HMATparam = copy.deepcopy(self.C.HMATparam)
+            if updateHMATuponRemeshing:
+                self.C.HMAT._unset()
+                log.info("   --> memory of the old elasticity matrix is now free")
 
-        self.C = load_isotropic_elasticity_matrix_toepliz(
-            coarse_mesh,
-            self.solid_prop.Eprime,
-            C_precision=np.float64,
-            useHMATdot=updateHMATuponRemeshing,
-            nu=nu,
-            HMATparam=HMATparam,
-            Kernel=Kernel,
-        )
+            self.C = load_isotropic_elasticity_matrix_toepliz(
+                coarse_mesh,
+                self.solid_prop.Eprime,
+                C_precision=np.float64,
+                useHMATdot=updateHMATuponRemeshing,
+                nu=nu,
+                HMATparam=HMATparam,
+                Kernel=Kernel,
+            )
 
-        # Ensuring that we always use block topliz compression.
-        if not self.sim_prop.useBlockToeplizCompression:
+        # Ensuring that we always use block topliz compression (except for symmetric
+        # fractures, which use a plain ndarray elasticity matrix and rely on the
+        # dedicated symmetric solver path that requires useBlockToeplizCompression=False).
+        if not self.sim_prop.symmetric and not self.sim_prop.useBlockToeplizCompression:
             self.sim_prop.useBlockToeplizCompression = True
 
         # todo: Carlo whe should not need this block anymore if we always use block topliz. I commented!

@@ -14,13 +14,16 @@ import dill
 import requests
 from numba import njit, float64
 
+
 @njit((float64, float64, float64, float64), nogil=True, cache=True)
 def get_distance_components(x_i, y_i, x_j, y_j):
     x_imj = x_i - x_j
     y_imj = y_i - y_j
     return x_imj, y_imj
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
+
 
 def getMemUse():
     # some memory statistics
@@ -32,7 +35,9 @@ def getMemUse():
     print("  -> Current memory use: " + str(GiByte_use) + " GiB")
     return GiByte_use
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
+
 
 def plot_as_matrix(data, mesh, fig=None):
 
@@ -47,26 +52,30 @@ def plot_as_matrix(data, mesh, fig=None):
 
     return fig
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
 def ReadFracture(filename):
-    with open(filename, 'rb') as input:
+    with open(filename, "rb") as input:
         return dill.load(input)
 
-#-----------------------------------------------------------------------------------------------------------------------
 
-def save_images_to_video(image_folder, video_name='movie'):
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+def save_images_to_video(image_folder, video_name="movie"):
 
     import cv2
     import os
-    log = logging.getLogger('PyFrac.save_images_to_video')
+
+    log = logging.getLogger("PyFrac.save_images_to_video")
     if ".avi" not in video_name:
-        video_name = video_name + '.avi'
+        video_name = video_name + ".avi"
 
     images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
     frame = cv2.imread(os.path.join(image_folder, images[0]))
     height, width, layers = frame.shape
 
-    video = cv2.VideoWriter(video_name, -1, 1, (width,height))
+    video = cv2.VideoWriter(video_name, -1, 1, (width, height))
 
     img_no = 0
     for image in images:
@@ -78,9 +87,12 @@ def save_images_to_video(image_folder, video_name='movie'):
     cv2.destroyAllWindows()
     video.release()
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
 import sys
 import logging
+
+
 def logging_level(logging_level_string):
     """
     This function returns the pertinent logging level based on the string received as input.
@@ -93,22 +105,24 @@ def logging_level(logging_level_string):
                                  'critical' - A serious error, indicating that the program itself may be unable to continue running.
     :return: code representing the logging error
     """
-    if logging_level_string in ['debug', 'Debug', 'DEBUG']:
+    if logging_level_string in ["debug", "Debug", "DEBUG"]:
         return logging.DEBUG
-    elif logging_level_string in ['info', 'Info', 'INFO']:
+    elif logging_level_string in ["info", "Info", "INFO"]:
         return logging.INFO
-    elif logging_level_string in ['warning', 'Warning', 'WARNING']:
+    elif logging_level_string in ["warning", "Warning", "WARNING"]:
         return logging.WARNING
-    elif logging_level_string in ['error', 'Error', 'ERROR']:
+    elif logging_level_string in ["error", "Error", "ERROR"]:
         return logging.ERROR
-    elif logging_level_string in ['critical', 'Critical', 'CRITICAL']:
+    elif logging_level_string in ["critical", "Critical", "CRITICAL"]:
         return logging.CRITICAL
     else:
-        SystemExit('Options are: debug, info, warning, error, critical')
+        SystemExit("Options are: debug, info, warning, error, critical")
 
-#-----------------------------------------------------------------------------------------------------------------------
 
-def setup_logging_to_console(verbosity_level='debug'):
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+def setup_logging_to_console(verbosity_level="info"):
     """This function sets up the log to the console
         Note: from any module in the code you can use the logging capabilities. You just have to:
 
@@ -146,25 +160,25 @@ def setup_logging_to_console(verbosity_level='debug'):
     """
     consoleLvl = logging_level(verbosity_level)
 
-    logger = logging.getLogger('PyFrac')
+    logger = logging.getLogger("PyFrac")
     logger.setLevel(logging.DEBUG)
 
     # create console handler with a higher log level
-    ch = logging.StreamHandler(stream = sys.stdout)
+    ch = logging.StreamHandler(stream=sys.stdout)
     ch.setLevel(consoleLvl)
 
     # create formatter and add it to the handlers
-    formatterch = logging.Formatter(fmt='%(levelname)-8s:     %(message)s')
+    formatterch = logging.Formatter(fmt="%(levelname)-8s:     %(message)s")
     ch.setFormatter(formatterch)
 
     # add the handlers to logger
     logger.addHandler(ch)
 
-    log = logging.getLogger('PyFrac.general')
-    log.info('Console logger set up correctly')
+    log = logging.getLogger("PyFrac.general")
+    log.info("Console logger set up correctly")
 
     # create a logger that logs only to the console and not on the file:
-    logger_to_console = logging.getLogger('PyFrac_LC')
+    logger_to_console = logging.getLogger("PyFrac_LC")
     logger_to_console.setLevel(logging.DEBUG)
 
     # add the handlers to logger
@@ -174,7 +188,9 @@ def setup_logging_to_console(verbosity_level='debug'):
     # logger_to_files = logging.getLogger('PyFrac_LF.set_logging_to_file')
     # logger_to_files.info('this comment will go only to the log file')
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
+
 
 def append_new_line(file_name, text_to_append):
     """Append given text as a new line at the end of file"""
@@ -189,7 +205,8 @@ def append_new_line(file_name, text_to_append):
         # Append text at the end of file
         file_object.write(text_to_append)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------
 
 # SENDING A MESSAGE TO MONITOR THE SIMULATION
 """
@@ -198,19 +215,26 @@ https://medium.com/@ManHay_Hong/how-to-create-a-telegram-bot-and-send-messages-w
 
 """
 
+
 def send_phone_message(bot_message):
     try:
-        bot_token = 'the one that you have when you create a bot'
-        bot_chatID = 'it is the field ID at https://api.telegram.org/bot<yourtoken>/getUpdates -> replace <yourtoken> with bot_token'
+        bot_token = "the one that you have when you create a bot"
+        bot_chatID = "it is the field ID at https://api.telegram.org/bot<yourtoken>/getUpdates -> replace <yourtoken> with bot_token"
 
-
-
-        send_text = 'https://api.telegram.org/bot' + bot_token + '/sendMessage?chat_id=' + bot_chatID + '&parse_mode=Markdown&text=' + bot_message
+        send_text = (
+            "https://api.telegram.org/bot"
+            + bot_token
+            + "/sendMessage?chat_id="
+            + bot_chatID
+            + "&parse_mode=Markdown&text="
+            + bot_message
+        )
         response = requests.get(send_text)
         return response.json()
 
     except Exception as e:
         # there may be many error coming...
-        print(e);
+        print(e)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------------------------------------------------

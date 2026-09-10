@@ -286,10 +286,10 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list.append(np.mean(fracture_list[i].ReynoldsNumber, axis=0))
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid flux' or variable == 'ff':
@@ -305,10 +305,10 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidFlux, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'fluid velocity' or variable == 'fv':
@@ -324,10 +324,10 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
                 variable_list[i] = np.mean(fracture_list[i].fluidVelocity, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'pressure gradient x' or variable == 'dpdx':
@@ -370,14 +370,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].fluidFlux_components[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.fluidFlux_components is not None:
+            elif fracture_list[i].fluidFlux_components is not None:
                 variable_list[i] = fracture_list[i].fluidFlux_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts, ), np.nan))
 
     elif variable == 'fluid velocity as vector field' or variable == 'fvvf':
@@ -389,14 +389,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].fluidVelocity_components[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.fluidFlux_components is not None:
+            elif fracture_list[i].fluidVelocity_components is not None:
                 variable_list[i] = fracture_list[i].fluidVelocity_components
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'effective viscosity' or variable == 'ev':
@@ -408,14 +408,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].effVisc[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.effVisc is not None:
+            elif fracture_list[i].effVisc is not None:
                 variable_list[i] = np.mean(fracture_list[i].effVisc, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable == 'yielded' or variable == 'y':
@@ -427,14 +427,14 @@ def get_fracture_variable(fracture_list, variable, edge=4, return_time=False):
             if edge < 4:
                 variable_list[i] = fracture_list[i].yieldRatio[edge]
                 time_srs[i] = fracture_list[i].time
-            elif i.yieldRatio is not None:
+            elif fracture_list[i].yieldRatio is not None:
                 variable_list[i] = np.mean(fracture_list[i].yieldRatio, axis=0)
                 time_srs[i] = fracture_list[i].time
             else:
-                if isinstance(i.mesh, int):
-                    fr_mesh = fracture_list[i.mesh].mesh
+                if isinstance(fracture_list[i].mesh, int):
+                    fr_mesh = fracture_list[fracture_list[i].mesh].mesh
                 else:
-                    fr_mesh = i.mesh
+                    fr_mesh = fracture_list[i].mesh
                 variable_list.append(np.full((fr_mesh.NumberOfElts,), np.nan))
 
     elif variable in ('front_dist_min', 'd_min', 'front_dist_max', 'd_max', 'front_dist_mean', 'd_mean'):

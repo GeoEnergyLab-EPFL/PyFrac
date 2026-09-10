@@ -10,6 +10,7 @@ See the LICENSE.TXT file for more details.
 # external imports
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.art3d as art3d
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
 from matplotlib.colors import to_rgb
@@ -895,7 +896,10 @@ class CartesianMesh:
             fig, ax = plt.subplots()
         else:
             plt.figure(fig.number)
-            plt.subplot(111)
+            # reuse the figure's existing (main) axes; calling plt.subplot(111)
+            # here would add a new overlapping empty axes on recent matplotlib
+            # when the existing axes was not created as a 111 subplot, which
+            # blanks the plot when the figure is reused across time steps.
             ax = fig.get_axes()[0]
 
         # set the four corners of the rectangular mesh
@@ -924,11 +928,19 @@ class CartesianMesh:
         if material_prop is not None and backGround_param is not None:
             min_value, max_value, parameter, colors = process_material_prop_for_display(material_prop,
                                                                                         backGround_param)
+            # Reset the axes to the default full-figure position. On a figure
+            # reused across time steps the axes would otherwise keep the shrunken
+            # position left by the previous colorbar, so it narrows a little more
+            # every step. Resetting first, then giving the colorbar its own
+            # dedicated axes (via make_axes_locatable) keeps the plot width stable.
+            ax.set_position([0.125, 0.11, 0.775, 0.77], which='both')
             # plotting color bar
             sm = plt.cm.ScalarMappable(cmap=plot_prop.colorMap,
                                        norm=plt.Normalize(vmin=min_value, vmax=max_value))
             sm._A = []
-            clr_bar = fig.colorbar(sm, alpha=0.65, ax=fig.gca())
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            clr_bar = fig.colorbar(sm, alpha=0.65, cax=cax)
             clr_bar.set_label(parameter)
 
         else:
@@ -936,7 +948,10 @@ class CartesianMesh:
 
         p.set_array(np.array(colors))
         ax.add_collection(p)
-        plt.axis('equal')
+        # use set_aspect (adjustable='box') rather than plt.axis('equal'); the
+        # latter fights the fixed box created by the colorbar's divider axes and
+        # leaves the axes non-square when the figure is reused across time steps.
+        ax.set_aspect('equal')
 
         return fig
 
@@ -1014,7 +1029,10 @@ class CartesianMesh:
         self.plot_scale_3d(ax, plot_prop)
 
         ax.grid(False)
-        ax.set_frame_on(False)
+        # Axes3D.set_frame_on is None in recent matplotlib (>=3.x); set_axis_off()
+        # below already removes the frame, so only call it when it is available.
+        if callable(getattr(ax, "set_frame_on", None)):
+            ax.set_frame_on(False)
         ax.set_axis_off()
         set_aspect_equal_3d(ax)
         return fig
@@ -1043,12 +1061,12 @@ class CartesianMesh:
         for i in range(7):
             codes.append(Path.MOVETO)
             elem = self.locate_element(verts_x[i], self.domainLimits[0])
-            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] - self.hy / 2))
+            verts.append((self.CenterCoor[elem, 0][0], self.domainLimits[0] - self.hy / 2))
             codes.append(Path.LINETO)
-            verts.append((self.CenterCoor[elem, 0], self.domainLimits[0] + tick_len))
-            x_val = to_precision(np.round(self.CenterCoor[elem, 0], 5), plot_prop.dispPrecision)
+            verts.append((self.CenterCoor[elem, 0][0], self.domainLimits[0] + tick_len))
+            x_val = to_precision(np.round(self.CenterCoor[elem, 0][0], 5), plot_prop.dispPrecision)
             text3d(ax,
-                   (self.CenterCoor[elem, 0] - plot_prop.dispPrecision * plot_prop.textSize / 3,
+                   (self.CenterCoor[elem, 0][0] - plot_prop.dispPrecision * plot_prop.textSize / 3,
                     self.domainLimits[0] - self.hy / 2 - plot_prop.textSize,
                     0),
                    x_val,
@@ -1063,10 +1081,10 @@ class CartesianMesh:
             verts.append((self.domainLimits[2] - self.hx / 2, self.CenterCoor[elem, 1][0]))
             codes.append(Path.LINETO)
             verts.append((self.domainLimits[2] + tick_len, self.CenterCoor[elem, 1][0]))
-            y_val = to_precision(np.round(self.CenterCoor[elem, 1], 5), plot_prop.dispPrecision)
+            y_val = to_precision(np.round(self.CenterCoor[elem, 1][0], 5), plot_prop.dispPrecision)
             text3d(ax,
                    (self.domainLimits[2] - self.hx / 2 - plot_prop.dispPrecision * plot_prop.textSize,
-                    self.CenterCoor[elem, 1] - plot_prop.textSize / 2,
+                    self.CenterCoor[elem, 1][0] - plot_prop.textSize / 2,
                     0),
                    y_val,
                    zdir="z",

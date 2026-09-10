@@ -58,7 +58,11 @@ simulProp.finalTime = 145.                              # the time at which the 
 simulProp.bckColor = 'sigma0'                           # setting the parameter according to which the mesh is colored
 simulProp.set_outputFolder("./Data/height_contained")   # set the directory to save the simulation
 simulProp.tmStpPrefactor = 1.0                          # decreasing the size of time step
-simulProp.plotVar = ['footprint']                       # plotting footprint
+simulProp.saveTSJump, simulProp.plotTSJump = (
+    5,
+    1,
+)  # save and plot after every 5 time steps
+simulProp.plotVar = ['regime', 'w']                     # plotting regime and width
 simulProp.set_mesh_extension_direction(['horizontal'])  # allow the mesh to extend horizontally
 simulProp.set_mesh_extension_factor(1.35)               # setting the mesh extension factor
 simulProp.useBlockToeplizCompression = True             # use the Toepliz elasticity to save memory
